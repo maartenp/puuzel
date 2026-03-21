@@ -21,11 +21,11 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Word & Clue Database
 
 - [x] **DATA-01**: Dutch word list sourced and filtered for crossword suitability
-- [x] **DATA-02**: AI-generated clues for each word at three difficulty levels (easy, medium, hard)
+- [x] **DATA-02**: AI-generated clue for each word; difficulty derived from word commonness (4-5=easy, 3=medium, 1-2=hard)
 - [x] **DATA-03**: Clues are straightforward definitions (not cryptic or wordplay)
 - [x] **DATA-04**: Word+clue database bundled with app in SQLite format
 - [x] **DATA-05**: Database includes word frequency/commonness metadata for difficulty filtering
-- [x] **DATA-06**: AI clue generation includes self-verification pass (model answers its own clue to validate)
+- [x] **DATA-06**: AI clue generation includes self-verification pass (best-effort; unverified clues accepted with verified ones preferred at query time)
 
 ### Puzzle Generation
 

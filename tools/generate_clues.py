@@ -65,6 +65,7 @@ Regels per woord:
 - Maximaal 6 woorden per aanwijzing
 - Geef een gewoonheidsscore: 1=zeldzaam/vakjargon, 2=ongewoon, 3=bekend, 4=veelgebruikt, 5=alledaags
 - Geef is_archaic: true als het woord ouderwets of louter literair is, anders false
+- Als is_archaic=true, begin de aanwijzing met "Ouderwets: " (bijv. "Ouderwets: vrouw van adel")
 
 Antwoord ALLEEN als een JSON-array, geen andere tekst:
 [{{"word": "WOORD", "clue": "Korte omschrijving", "commonness": 3, "is_archaic": false}}, ...]"""
