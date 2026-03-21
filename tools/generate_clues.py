@@ -1,8 +1,13 @@
 """
 Claude Code CLI clue generator for Puuzel crossword generator.
 
-Generates Dutch crossword clues at three difficulty levels (easy/medium/hard)
-for Dutch words using the claude CLI (Max subscription — no API key required).
+Generates one descriptive Dutch crossword clue per word, plus a commonness
+score (1-5) that determines word difficulty:
+  - commonness 4-5 → easy word
+  - commonness 3   → medium word
+  - commonness 1-2 → hard word
+
+Uses the claude CLI (Max subscription — no API key required).
 Includes a self-verification pass and incremental progress saving.
 
 Usage:
@@ -33,35 +38,35 @@ class RateLimitError(Exception):
 
 def generate_clues_for_chunk(words: list) -> list:
     """
-    Generate clues for up to 50 words in a single claude CLI call.
+    Generate one clue per word for up to 50 words in a single claude CLI call.
+
+    Difficulty is NOT a property of the clue — it's derived from how common
+    the word is (commonness score). Each word gets one straightforward
+    descriptive clue.
 
     Args:
         words: list of word dicts with keys: word, grid_length, is_proper_noun
 
     Returns:
-        list of dicts: [{"word": "...", "easy": "...", "medium": "...", "hard": "...",
-                          "commonness": 3, "is_archaic": false}, ...]
+        list of dicts: [{"word": "...", "clue": "...", "commonness": 3, "is_archaic": false}, ...]
         Returns None if the call fails (non-rate-limit error).
 
     Raises:
         RateLimitError: if the claude CLI reports a usage/rate limit.
     """
     word_list = ", ".join(f'"{w["word"]}"' for w in words)
-    prompt = f"""Genereer drie kruiswoordraadsel-aanwijzingen in het Nederlands voor ELK van deze woorden:
+    prompt = f"""Genereer EEN kruiswoordraadsel-aanwijzing in het Nederlands voor elk van deze woorden:
 [{word_list}]
 
 Regels per woord:
+- Eén duidelijke, beschrijvende aanwijzing (synoniem, definitie of korte omschrijving)
 - Geen woordspeling, cryptische of dubbelzinnige aanwijzingen
 - Maximaal 6 woorden per aanwijzing
-- Makkelijk: directe omschrijving of synoniem
-- Middel: feitelijk maar meer nadenken vereist
-- Moeilijk: indirect, vraagt specifieke kennis of inferentie
-- Als het woord ouderwets of literair is, begin de moeilijke aanwijzing met "Ouderwets woord voor"
 - Geef een gewoonheidsscore: 1=zeldzaam/vakjargon, 2=ongewoon, 3=bekend, 4=veelgebruikt, 5=alledaags
 - Geef is_archaic: true als het woord ouderwets of louter literair is, anders false
 
 Antwoord ALLEEN als een JSON-array, geen andere tekst:
-[{{"word": "WOORD", "easy": "...", "medium": "...", "hard": "...", "commonness": 3, "is_archaic": false}}, ...]"""
+[{{"word": "WOORD", "clue": "Korte omschrijving", "commonness": 3, "is_archaic": false}}, ...]"""
 
     result = subprocess.run(
         ["claude", "-p", prompt, "--output-format", "json", "--model", "claude-haiku-4-5-20251001"],
@@ -99,10 +104,10 @@ def verify_clues_chunk(clues: list) -> list:
     the clue is considered verified.
 
     Args:
-        clues: [{"id": "IJSBEER-easy", "clue": "Wit poolroofdier", "word": "IJSBEER"}, ...]
+        clues: [{"id": "IJSBEER", "clue": "Wit poolroofdier", "word": "IJSBEER"}, ...]
 
     Returns:
-        [{"id": "IJSBEER-easy", "answer": "IJSBEER"}, ...]
+        [{"id": "IJSBEER", "answer": "IJSBEER"}, ...]
 
     Raises:
         RateLimitError: if the claude CLI reports a usage/rate limit.
@@ -140,14 +145,27 @@ Antwoord ALLEEN als een JSON-array:
         return []
 
 
+def commonness_to_difficulty(commonness: int) -> str:
+    """Derive word difficulty from commonness score.
+
+    Common/everyday words are easy, rare/specialist words are hard.
+    """
+    if commonness >= 4:
+        return "easy"
+    elif commonness == 3:
+        return "medium"
+    else:
+        return "hard"
+
+
 def build_result(word_info: dict, clue_dict: dict, verification_map: dict) -> dict:
     """
     Build the final result dict for one word combining generation and verification data.
 
     Args:
         word_info: from filtered_words.json (word, grid_length, is_proper_noun)
-        clue_dict: from generate_clues_for_chunk (easy, medium, hard, commonness, is_archaic)
-        verification_map: {clue_id: bool} — True if verified
+        clue_dict: from generate_clues_for_chunk (clue, commonness, is_archaic)
+        verification_map: {word: bool} — True if verified
 
     Returns:
         {
@@ -157,19 +175,18 @@ def build_result(word_info: dict, clue_dict: dict, verification_map: dict) -> di
           "is_proper_noun": false,
           "is_archaic": false,
           "clues": [
-            {"difficulty": "easy", "text": "...", "verified": true},
-            ...
+            {"difficulty": "easy", "text": "Wit poolroofdier", "verified": true}
           ]
         }
     """
     word = word_info["word"]
+    commonness = clue_dict.get("commonness", 3)
+    clue_text = clue_dict.get("clue", "")
+    verified = verification_map.get(word, False)
+    difficulty = commonness_to_difficulty(commonness)
+
     clues_out = []
-    for difficulty in ("easy", "medium", "hard"):
-        clue_text = clue_dict.get(difficulty, "")
-        if not clue_text:
-            continue
-        clue_id = f"{word}-{difficulty}"
-        verified = verification_map.get(clue_id, False)
+    if clue_text:
         clues_out.append({
             "difficulty": difficulty,
             "text": clue_text,
@@ -179,7 +196,7 @@ def build_result(word_info: dict, clue_dict: dict, verification_map: dict) -> di
     return {
         "word": word,
         "grid_length": word_info["grid_length"],
-        "commonness": clue_dict.get("commonness", 3),
+        "commonness": commonness,
         "is_proper_noun": word_info.get("is_proper_noun", False),
         "is_archaic": clue_dict.get("is_archaic", False),
         "clues": clues_out,
@@ -206,7 +223,7 @@ def process_chunk(words_chunk: list) -> list:
         if w:
             clue_map[w] = item
 
-    # Build clue items for verification
+    # Build clue items for verification (one clue per word)
     verification_inputs = []
     for word_info in words_chunk:
         w = word_info["word"]
@@ -215,14 +232,13 @@ def process_chunk(words_chunk: list) -> list:
             # LLM dropped this word from the batch — skip
             print(f"  [SKIP] {w} not found in LLM response")
             continue
-        for difficulty in ("easy", "medium", "hard"):
-            text = clue_dict.get(difficulty, "")
-            if text:
-                verification_inputs.append({
-                    "id": f"{w}-{difficulty}",
-                    "clue": text,
-                    "word": w,
-                })
+        text = clue_dict.get("clue", "")
+        if text:
+            verification_inputs.append({
+                "id": w,
+                "clue": text,
+                "word": w,
+            })
 
     # Verify in batches of CHUNK_SIZE
     verification_map = {}
@@ -231,13 +247,9 @@ def process_chunk(words_chunk: list) -> list:
         print(f"  Verifying {len(verify_batch)} clues...", flush=True)
         answers = verify_clues_chunk(verify_batch)
         for ans in answers:
-            clue_id = ans.get("id", "")
+            word_id = ans.get("id", "").strip().upper()
             answer = ans.get("answer", "").strip().upper()
-            # Extract target word from clue_id (format: "WORD-difficulty")
-            parts = clue_id.rsplit("-", 1)
-            if len(parts) == 2:
-                target = parts[0].upper()
-                verification_map[clue_id] = (answer == target)
+            verification_map[word_id] = (answer == word_id)
 
     # Build results
     results = []
@@ -273,10 +285,11 @@ def run_quality_gate(sample_results: list, output_dir: str) -> bool:
         commonness = item.get("commonness", "?")
         is_archaic = item.get("is_archaic", False)
         archaic_note = " [ARCHAIC]" if is_archaic else ""
-        print(f"\n  {word} (commonness={commonness}){archaic_note}")
+        difficulty = commonness_to_difficulty(int(commonness)) if isinstance(commonness, int) else "?"
+        print(f"\n  {word} (commonness={commonness} → {difficulty}){archaic_note}")
         for clue in item.get("clues", []):
             verified = "OK" if clue.get("verified") else "FAIL"
-            print(f"    [{clue['difficulty']:6}] [{verified}] {clue['text']}")
+            print(f"    [{verified}] {clue['text']}")
 
     print(f"\nFull sample saved to: {sample_path}")
     print("\nReview the sample clues above. Continue? [y/n] ", end="", flush=True)
@@ -392,27 +405,29 @@ def main():
 def _print_summary(results: list):
     """Print a summary of generation and verification results."""
     total_words = len(results)
-    difficulty_stats = {"easy": {"total": 0, "verified": 0},
-                        "medium": {"total": 0, "verified": 0},
-                        "hard": {"total": 0, "verified": 0}}
+    total_clues = 0
+    verified_clues = 0
+    difficulty_counts = {"easy": 0, "medium": 0, "hard": 0}
 
     for item in results:
+        commonness = item.get("commonness", 3)
+        difficulty = commonness_to_difficulty(commonness)
+        difficulty_counts[difficulty] += 1
         for clue in item.get("clues", []):
-            d = clue.get("difficulty", "")
-            if d in difficulty_stats:
-                difficulty_stats[d]["total"] += 1
-                if clue.get("verified"):
-                    difficulty_stats[d]["verified"] += 1
+            total_clues += 1
+            if clue.get("verified"):
+                verified_clues += 1
+
+    pct = (verified_clues / total_clues * 100) if total_clues > 0 else 0
 
     print(f"\n{'='*60}")
     print(f"SUMMARY")
     print(f"{'='*60}")
     print(f"Words processed: {total_words}")
-    for d, stats in difficulty_stats.items():
-        total = stats["total"]
-        verified = stats["verified"]
-        pct = (verified / total * 100) if total > 0 else 0
-        print(f"  {d:6}: {total:5} clues, {verified:5} verified ({pct:.1f}%)")
+    print(f"Clues generated: {total_clues}, verified: {verified_clues} ({pct:.1f}%)")
+    print(f"Word difficulty distribution:")
+    for d, count in difficulty_counts.items():
+        print(f"  {d:6}: {count:5} words")
     print(f"{'='*60}")
 
 

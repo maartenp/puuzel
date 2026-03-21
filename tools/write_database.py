@@ -55,10 +55,24 @@ def create_database(db_path: str, conn: sqlite3.Connection = None) -> sqlite3.Co
     return conn
 
 
+def commonness_to_difficulty(commonness: int) -> str:
+    """Derive word difficulty from commonness score.
+
+    Common/everyday words are easy, rare/specialist words are hard.
+    """
+    if commonness >= 4:
+        return "easy"
+    elif commonness == 3:
+        return "medium"
+    else:
+        return "hard"
+
+
 def insert_words(conn: sqlite3.Connection, verified_clues: list) -> tuple:
     """
     Insert all verified words and their clues into the database.
 
+    Difficulty is derived from the word's commonness score, not the clue style.
     Only inserts clues where verified=True.
 
     Returns:
@@ -81,6 +95,7 @@ def insert_words(conn: sqlite3.Connection, verified_clues: list) -> tuple:
 
         # Clamp commonness to valid range 1-5
         commonness = max(1, min(5, int(commonness)))
+        difficulty = commonness_to_difficulty(commonness)
 
         try:
             cursor.execute(
@@ -104,13 +119,10 @@ def insert_words(conn: sqlite3.Connection, verified_clues: list) -> tuple:
 
         # Insert clues (only verified ones)
         for clue in item.get("clues", []):
-            difficulty = clue.get("difficulty", "")
             clue_text = clue.get("text", "").strip()
             verified = 1 if clue.get("verified", False) else 0
 
-            if not clue_text or not difficulty:
-                continue
-            if difficulty not in ("easy", "medium", "hard"):
+            if not clue_text:
                 continue
             if not verified:
                 continue  # Only insert verified clues
