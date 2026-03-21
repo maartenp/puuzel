@@ -60,6 +60,7 @@ def generate_clues_for_chunk(words: list) -> list:
 
 Regels per woord:
 - Eén duidelijke, beschrijvende aanwijzing (synoniem, definitie of korte omschrijving)
+- De aanwijzing mag GEEN deel van het antwoordwoord bevatten (bijv. bij CLUBTROFEE mag je niet "trofee" of "club" gebruiken)
 - Geen woordspeling, cryptische of dubbelzinnige aanwijzingen
 - Maximaal 6 woorden per aanwijzing
 - Geef een gewoonheidsscore: 1=zeldzaam/vakjargon, 2=ongewoon, 3=bekend, 4=veelgebruikt, 5=alledaags
