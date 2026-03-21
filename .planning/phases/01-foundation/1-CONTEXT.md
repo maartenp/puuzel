@@ -52,13 +52,23 @@ Grid engine that generates valid Dutch/European-style crossword grids (~20x20) a
 - **D-28:** Backspace on an IJ cell: first press reverts to "I" in the cell, second press clears it
 - **D-29:** Words in the database store IJ as a single token for grid-fitting purposes (counts as 1 letter toward grid placement)
 
+### Word list source
+- **D-30:** Use the pre-downloaded `dutch.txt` file in the repo root (~190K words) — no need to download from OpenTaal at runtime
+- **D-31:** The file still needs the same filtering (length, abbreviations, vulgarity, etc.)
+
+### Clue generation method
+- **D-32:** Use Claude Code CLI (`claude -p`) via subprocess instead of Claude Batch API — leverages Max subscription, no API key needed
+- **D-33:** Process words in batches of 10K with a bash runner script
+- **D-34:** If usage limit is hit, wait for reset and automatically resume
+- **D-35:** Script can be interrupted and resumed — picks up from last completed batch
+
 ### Claude's Discretion
 - Grid generation algorithm choice (constraint propagation, backtracking strategy)
 - OpenTaal word list filtering pipeline (inflection removal, frequency scoring methodology)
-- Claude API prompt design for clue generation and self-verification
+- Claude Code CLI prompt design for clue generation and self-verification
 - SQLite schema design for word/clue storage
 - Word frequency/commonness scoring approach
-- IJ detection in the OpenTaal source list (normalization strategy)
+- IJ detection in the dutch.txt word list (normalization strategy)
 
 </decisions>
 
