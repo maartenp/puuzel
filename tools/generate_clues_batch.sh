@@ -82,7 +82,11 @@ else
         fi
 
         WAVE=("${BATCHES_TO_RUN[@]:0:$WAVE_SIZE}")
-        BATCHES_TO_RUN=("${BATCHES_TO_RUN[@]:$WAVE_SIZE}" 2>/dev/null || true)
+        if [ ${#BATCHES_TO_RUN[@]} -gt $WAVE_SIZE ]; then
+            BATCHES_TO_RUN=("${BATCHES_TO_RUN[@]:$WAVE_SIZE}")
+        else
+            BATCHES_TO_RUN=()
+        fi
 
         echo ""
         echo "=== Launching wave of $WAVE_SIZE parallel batches ==="
