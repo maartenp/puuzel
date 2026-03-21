@@ -50,7 +50,7 @@ A native crossword puzzle game for Linux Mint and macOS, built in Rust with macr
 ### Bundled Database Format
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| rusqlite | 0.32.x | Embedded SQLite for word/clue storage and query | Use for the bundled word+clue database. Enables indexed queries like "give me 20 five-letter words at difficulty=easy not in recent_words." Include `bundled` feature flag to statically link SQLite — no system dependency. |
+| rusqlite | 0.39.x | Embedded SQLite for word/clue storage and query | Use for the bundled word+clue database. Enables indexed queries like "give me 20 five-letter words at difficulty=easy not in recent_words." Include `bundled` feature flag to statically link SQLite — no system dependency. |
 ## Flatpak Distribution
 ### Runtime
 ### Auto-Updates
@@ -77,7 +77,7 @@ A native crossword puzzle game for Linux Mint and macOS, built in Rust with macr
 | RON for the word database | RON has no tooling for inspecting or migrating large datasets. The clue generation pipeline runs in Python/shell before compile time. | serde_json for interchange, SQLite for runtime queries |
 | Runtime HTTP calls to Claude API | Project constraint explicitly forbids runtime API calls during gameplay. All clue data must be bundled at build time. | Offline bundled SQLite database |
 | `directories` < 6.0 | Breaking changes in v3+; API differs for `ProjectDirs`. Always use 6.x. | `directories = "6"` |
-| System-provided SQLite (non-bundled rusqlite) | Flatpak sandboxes don't have reliable access to system libraries. The `bundled` feature statically links SQLite into the binary, eliminating the dependency. | `rusqlite = { version = "0.32", features = ["bundled"] }` |
+| System-provided SQLite (non-bundled rusqlite) | Flatpak sandboxes don't have reliable access to system libraries. The `bundled` feature statically links SQLite into the binary, eliminating the dependency. | `rusqlite = { version = "0.39", features = ["bundled"] }` |
 | Custom update logic inside the app | Flatpak handles updates at the OS level. In-app updaters conflict with the Flatpak trust model and are unnecessary. | Publish to Flathub; rely on OS-level update tooling. |
 ## Stack Patterns by Variant
 - Add `egui-macroquad = "0.17"` (verify version against macroquad 0.4 compatibility on crates.io before adding)
@@ -94,7 +94,7 @@ A native crossword puzzle game for Linux Mint and macOS, built in Rust with macr
 |---------|-----------------|-------|
 | macroquad 0.4.14 | Rust stable 1.75+ | 0.4 changed shaders to require `ShaderSource` with both GLSL and Metal; avoid raw GLSL strings from 0.3 examples |
 | rand 0.10.0 | Rust stable 1.78+ | API change from 0.8: `thread_rng()` → `rng()`, `gen()` → `random()`. Do not mix 0.8 and 0.10 in dep tree. |
-| rusqlite 0.32 with `bundled` | SQLite 3.45.x (bundled automatically) | `bundled` feature compiles SQLite from source — increases compile time by ~10s but eliminates all system dependency |
+| rusqlite 0.39 with `bundled` | SQLite 3.45.x (bundled automatically) | `bundled` feature compiles SQLite from source — increases compile time by ~10s but eliminates all system dependency |
 | directories 6.0.0 | All target platforms | v6 stable API; `ProjectDirs::from("", "", "puuzel")` returns correct XDG paths on Linux, NSApplicationSupportDirectory on macOS |
 | egui-macroquad | Must match macroquad minor version | Verify crates.io compatibility before pinning — this crate tracks macroquad releases closely and can lag by one minor version |
 ## Sources
