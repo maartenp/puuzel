@@ -59,10 +59,10 @@ def generate_clues_for_chunk(words: list) -> list:
 [{word_list}]
 
 Regels per woord:
-- Eén duidelijke, beschrijvende aanwijzing (synoniem, definitie of korte omschrijving)
+- Bij voorkeur EEN woord als aanwijzing: een synoniem, categorie of kernbeschrijving (bijv. lente→seizoen, zweep→strafwerktuig, bonthoed→hoofddeksel)
+- Gebruik alleen meerdere woorden als een enkel woord niet duidelijk genoeg is (maximaal 4 woorden)
 - De aanwijzing mag GEEN deel van het antwoordwoord bevatten (bijv. bij CLUBTROFEE mag je niet "trofee" of "club" gebruiken)
 - Geen woordspeling, cryptische of dubbelzinnige aanwijzingen
-- Maximaal 6 woorden per aanwijzing
 - Geef een gewoonheidsscore: 1=zeldzaam/vakjargon, 2=ongewoon, 3=bekend, 4=veelgebruikt, 5=alledaags
 - Geef is_archaic: true als het woord ouderwets of louter literair is, anders false
 - Als is_archaic=true, begin de aanwijzing met "Ouderwets: " (bijv. "Ouderwets: vrouw van adel")
