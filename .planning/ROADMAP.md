@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold, core grid types, IJ tokenization, SQLite schema and query layer
+- [x] 01-01-PLAN.md — Project scaffold, core grid types, IJ tokenization, SQLite schema and query layer
 - [ ] 01-02-PLAN.md — CSP backtracking grid generator with difficulty-dependent density and word selection
 - [ ] 01-03-PLAN.md — Python word/clue pipeline: OpenTaal filter, Claude Batch API clue generation, database writer
 

@@ -11,7 +11,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **GRID-01**: App generates valid Dutch/European-style crossword grids (~20x20)
 - [ ] **GRID-02**: Generated grids have connected white squares (one contiguous region)
-- [ ] **GRID-03**: IJ digraph is treated as a single cell in the grid
+- [x] **GRID-03**: IJ digraph is treated as a single cell in the grid
 - [ ] **GRID-04**: Unchecked letters are permitted (not every letter needs both across and down)
 - [ ] **GRID-05**: Two-letter words are permitted in the grid
 - [ ] **GRID-06**: Black square density varies by difficulty (easy = more black squares, hard = fewer)
@@ -23,8 +23,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **DATA-01**: Dutch word list sourced and filtered for crossword suitability
 - [ ] **DATA-02**: AI-generated clues for each word at three difficulty levels (easy, medium, hard)
 - [ ] **DATA-03**: Clues are straightforward definitions (not cryptic or wordplay)
-- [ ] **DATA-04**: Word+clue database bundled with app in SQLite format
-- [ ] **DATA-05**: Database includes word frequency/commonness metadata for difficulty filtering
+- [x] **DATA-04**: Word+clue database bundled with app in SQLite format
+- [x] **DATA-05**: Database includes word frequency/commonness metadata for difficulty filtering
 - [ ] **DATA-06**: AI clue generation includes self-verification pass (model answers its own clue to validate)
 
 ### Puzzle Generation
@@ -107,7 +107,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | GRID-01 | Phase 1 | Pending |
 | GRID-02 | Phase 1 | Pending |
-| GRID-03 | Phase 1 | Pending |
+| GRID-03 | Phase 1 | Complete |
 | GRID-04 | Phase 1 | Pending |
 | GRID-05 | Phase 1 | Pending |
 | GRID-06 | Phase 1 | Pending |
@@ -116,8 +116,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-01 | Phase 1 | Pending |
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
-| DATA-05 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Complete |
+| DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Pending |
 | PGEN-01 | Phase 2 | Pending |
 | PGEN-02 | Phase 2 | Pending |
