@@ -46,7 +46,12 @@ Plans:
   3. Clicking a clue in the list highlights that word's cells and moves the cursor to the first open cell; the active word is always visibly highlighted
   4. Single-click on a filled word highlights it; double-click opens a thumbs-up/thumbs-down rating prompt
   5. When all cells are correctly filled the app shows a congratulations message and offers to start a new puzzle; fonts are large and readable; grid and clue list fill the screen at high contrast
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Game state machine, types, numbering, word history, menu screen, background generation
+- [ ] 02-02-PLAN.md — Grid rendering, clue panel, input handling, all interaction and display requirements
+- [ ] 02-03-PLAN.md — Completion detection, congratulations overlay, new puzzle flow, visual verification
 
 ### Phase 3: Session Continuity
 **Goal**: The puzzle survives an app restart and clue feedback ratings are durably recorded for future quality improvement
@@ -76,6 +81,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete   | 2026-03-21 |
-| 2. Playable Game | 0/TBD | Not started | - |
+| 2. Playable Game | 0/3 | Not started | - |
 | 3. Session Continuity | 0/TBD | Not started | - |
 | 4. Distribution | 0/TBD | Not started | - |
