@@ -27,6 +27,7 @@ async fn main() {
     let db_path = PathBuf::from("data/puuzel.db");
     let mut state = GameState::DifficultySelection;
     let mut word_history = WordHistory::new();
+    let mut input_state = input::handler::InputState::new();
 
     loop {
         clear_background(BLACK);
@@ -89,17 +90,36 @@ async fn main() {
             }
             GameState::Playing(mut puzzle) => {
                 let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
-                input::handler::process_input(&mut puzzle, &layout);
+                input::handler::process_input(&mut puzzle, &layout, &mut input_state);
                 render::grid::draw_grid(&puzzle, &layout);
                 if let Some(click) = render::clue_panel::draw_clue_panel(&puzzle) {
                     puzzle.select_clue(&click.slot);
                 }
-                // Check completion per FLOW-01 (wired in Plan 03)
-                GameState::Playing(puzzle)
+                // Double-click rating dialog (INTR-09)
+                if let Some(ref ctx) = input_state.rating_dialog {
+                    if let Some(_thumbs_up) = render::overlay::draw_rating_dialog(&ctx.clue_text) {
+                        // Phase 3 will persist this rating (FLOW-04)
+                        log::info!("Clue rated: word_id={}, thumbs_up={}", ctx.word_id, _thumbs_up);
+                        input_state.rating_dialog = None;
+                    }
+                }
+                // Completion check per FLOW-01
+                if puzzle.is_complete() {
+                    GameState::Congratulations(puzzle)
+                } else {
+                    GameState::Playing(puzzle)
+                }
             }
             GameState::Congratulations(puzzle) => {
-                draw_text("Congratulations! (overlay coming in Plan 03)", 40.0, 40.0, 24.0, WHITE);
-                GameState::Congratulations(puzzle)
+                let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
+                render::grid::draw_grid(&puzzle, &layout);
+                render::clue_panel::draw_clue_panel(&puzzle);
+                if render::overlay::draw_congratulations() {
+                    // "Nieuwe puzzel" clicked — return to difficulty selection (FLOW-02)
+                    GameState::DifficultySelection
+                } else {
+                    GameState::Congratulations(puzzle)
+                }
             }
         };
         next_frame().await;
