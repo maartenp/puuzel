@@ -2,6 +2,7 @@ mod grid;
 mod db;
 mod game;
 mod render;
+mod input;
 
 use macroquad::prelude::*;
 use game::state::GameState;
@@ -86,9 +87,14 @@ async fn main() {
                     }
                 }
             }
-            GameState::Playing(puzzle) => {
-                // Placeholder: draw a message until Plan 02 adds grid/input rendering
-                draw_text("Playing... (rendering coming in Plan 02)", 40.0, 40.0, 24.0, WHITE);
+            GameState::Playing(mut puzzle) => {
+                let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
+                input::handler::process_input(&mut puzzle, &layout);
+                render::grid::draw_grid(&puzzle, &layout);
+                if let Some(click) = render::clue_panel::draw_clue_panel(&puzzle) {
+                    puzzle.select_clue(&click.slot);
+                }
+                // Check completion per FLOW-01 (wired in Plan 03)
                 GameState::Playing(puzzle)
             }
             GameState::Congratulations(puzzle) => {

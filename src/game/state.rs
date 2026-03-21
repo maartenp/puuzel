@@ -138,6 +138,285 @@ impl PuzzleState {
 
         self.clue_numbers.get(&word_start).copied()
     }
+
+    /// Handle a cell click at (row, col).
+    ///
+    /// - If the cell is Black, the click is ignored.
+    /// - If the clicked cell is already selected, toggle the direction (INTR-02, D-10).
+    /// - Otherwise, select the cell and set direction to the word containing it
+    ///   (prefer Across if both; if only one direction has a word, use that one).
+    pub fn handle_cell_click(&mut self, row: usize, col: usize) {
+        // Ignore clicks on black cells
+        if matches!(self.grid.cells[row][col], Cell::Black) {
+            return;
+        }
+
+        if self.selected_cell == Some((row, col)) {
+            // Toggle direction
+            self.selected_direction = match self.selected_direction {
+                Direction::Across => Direction::Down,
+                Direction::Down => Direction::Across,
+            };
+        } else {
+            // Set new selection; prefer the direction with a valid word
+            self.selected_cell = Some((row, col));
+
+            let has_across = self.across_clues.iter().any(|e| {
+                let s = &e.slot;
+                s.row == row && s.col <= col && col < s.col + s.length
+            });
+            let has_down = self.down_clues.iter().any(|e| {
+                let s = &e.slot;
+                s.col == col && s.row <= row && row < s.row + s.length
+            });
+
+            // Prefer Across; fall back to Down; keep current if neither (shouldn't happen)
+            if has_across {
+                self.selected_direction = Direction::Across;
+            } else if has_down {
+                self.selected_direction = Direction::Down;
+            }
+        }
+    }
+
+    /// Set the letter in the selected cell and advance the cursor to the next white cell
+    /// in the current direction (INTR-03, D-10).
+    pub fn set_letter_and_advance(&mut self, ch: char) {
+        let (row, col) = match self.selected_cell {
+            Some(c) => c,
+            None => return,
+        };
+
+        self.user_grid[row][col] = Some(LetterToken::Single(ch.to_ascii_uppercase()));
+        self.advance_cursor();
+    }
+
+    /// Advance the cursor to the next white cell in the current direction.
+    /// Stops at the end of the word (does not wrap).
+    fn advance_cursor(&mut self) {
+        let (row, col) = match self.selected_cell {
+            Some(c) => c,
+            None => return,
+        };
+
+        match self.selected_direction {
+            Direction::Across => {
+                let mut next_col = col + 1;
+                while next_col < self.grid.width {
+                    if matches!(self.grid.cells[row][next_col], Cell::White { .. }) {
+                        self.selected_cell = Some((row, next_col));
+                        return;
+                    }
+                    next_col += 1;
+                }
+                // End of row — stay on current cell
+            }
+            Direction::Down => {
+                let mut next_row = row + 1;
+                while next_row < self.grid.height {
+                    if matches!(self.grid.cells[next_row][col], Cell::White { .. }) {
+                        self.selected_cell = Some((next_row, col));
+                        return;
+                    }
+                    next_row += 1;
+                }
+                // End of column — stay on current cell
+            }
+        }
+    }
+
+    /// Handle the IJ digraph: if the current cell has a Single('I') and the answer is IJ,
+    /// promote it to IJ and advance the cursor. Returns true if consumed.
+    pub fn handle_ij_input(&mut self) -> bool {
+        let (row, col) = match self.selected_cell {
+            Some(c) => c,
+            None => return false,
+        };
+
+        // Only promote if the answer at this cell is IJ
+        let answer_is_ij = matches!(
+            &self.grid.cells[row][col],
+            Cell::White { letter: Some(LetterToken::IJ) }
+        );
+
+        // Only promote if the user has already typed 'I' in this cell
+        let user_has_i = self.user_grid[row][col] == Some(LetterToken::Single('I'));
+
+        if answer_is_ij && user_has_i {
+            self.user_grid[row][col] = Some(LetterToken::IJ);
+            self.advance_cursor();
+            return true;
+        }
+
+        false
+    }
+
+    /// Handle backspace: clear the selected cell, or move back and clear the previous cell
+    /// if the current cell is already empty (INTR-04, D-11).
+    pub fn backspace(&mut self) {
+        let (row, col) = match self.selected_cell {
+            Some(c) => c,
+            None => return,
+        };
+
+        if self.user_grid[row][col].is_some() {
+            // Clear the current cell
+            self.user_grid[row][col] = None;
+        } else {
+            // Move back one cell in the current direction and clear it
+            match self.selected_direction {
+                Direction::Across => {
+                    if col > 0 {
+                        // Find previous white cell
+                        let mut prev_col = col;
+                        while prev_col > 0 {
+                            prev_col -= 1;
+                            if matches!(self.grid.cells[row][prev_col], Cell::White { .. }) {
+                                self.selected_cell = Some((row, prev_col));
+                                self.user_grid[row][prev_col] = None;
+                                return;
+                            }
+                        }
+                    }
+                }
+                Direction::Down => {
+                    if row > 0 {
+                        let mut prev_row = row;
+                        while prev_row > 0 {
+                            prev_row -= 1;
+                            if matches!(self.grid.cells[prev_row][col], Cell::White { .. }) {
+                                self.selected_cell = Some((prev_row, col));
+                                self.user_grid[prev_row][col] = None;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Move the cursor by `delta` cells in `direction` (D-12, INTR).
+    /// Skips black cells. Clamps to grid bounds.
+    pub fn move_cursor(&mut self, direction: Direction, delta: i32) {
+        let (row, col) = match self.selected_cell {
+            Some(c) => c,
+            None => {
+                // No selection: move to first white cell
+                for r in 0..self.grid.height {
+                    for c in 0..self.grid.width {
+                        if matches!(self.grid.cells[r][c], Cell::White { .. }) {
+                            self.selected_cell = Some((r, c));
+                            self.selected_direction = direction;
+                            return;
+                        }
+                    }
+                }
+                return;
+            }
+        };
+
+        self.selected_direction = direction;
+
+        match direction {
+            Direction::Across => {
+                let mut new_col = col as i32 + delta;
+                new_col = new_col.max(0).min(self.grid.width as i32 - 1);
+                // Skip black cells
+                let step = if delta > 0 { 1i32 } else { -1 };
+                let mut c = new_col;
+                loop {
+                    if c < 0 || c >= self.grid.width as i32 {
+                        break;
+                    }
+                    if matches!(self.grid.cells[row][c as usize], Cell::White { .. }) {
+                        self.selected_cell = Some((row, c as usize));
+                        return;
+                    }
+                    c += step;
+                }
+                // Couldn't find a white cell in that direction; stay put
+            }
+            Direction::Down => {
+                let mut new_row = row as i32 + delta;
+                new_row = new_row.max(0).min(self.grid.height as i32 - 1);
+                let step = if delta > 0 { 1i32 } else { -1 };
+                let mut r = new_row;
+                loop {
+                    if r < 0 || r >= self.grid.height as i32 {
+                        break;
+                    }
+                    if matches!(self.grid.cells[r as usize][col], Cell::White { .. }) {
+                        self.selected_cell = Some((r as usize, col));
+                        return;
+                    }
+                    r += step;
+                }
+            }
+        }
+    }
+
+    /// Cycle through clues by `delta` (1 = next, -1 = previous), wrapping around (D-12).
+    /// Selects the first cell of the new clue's slot.
+    pub fn cycle_clue(&mut self, delta: i32) {
+        // Build combined clue list: all across sorted by number, then all down sorted by number
+        let combined: Vec<(Direction, u32, &crate::grid::types::Slot)> = self
+            .across_clues
+            .iter()
+            .map(|e| (Direction::Across, e.number, &e.slot))
+            .chain(
+                self.down_clues
+                    .iter()
+                    .map(|e| (Direction::Down, e.number, &e.slot)),
+            )
+            .collect();
+
+        if combined.is_empty() {
+            return;
+        }
+
+        // Find current clue index
+        let current_idx = self
+            .selected_cell
+            .and_then(|_| {
+                let active_num = self.active_clue_number()?;
+                combined
+                    .iter()
+                    .position(|(dir, num, _)| *dir == self.selected_direction && *num == active_num)
+            })
+            .unwrap_or(0);
+
+        let n = combined.len() as i32;
+        let new_idx = ((current_idx as i32 + delta).rem_euclid(n)) as usize;
+
+        let (new_dir, _, slot) = combined[new_idx];
+        self.selected_direction = new_dir;
+        self.selected_cell = Some((slot.row, slot.col));
+    }
+
+    /// Select a clue by slot: set direction, find first empty cell in the slot (INTR-05, D-08).
+    pub fn select_clue(&mut self, slot: &Slot) {
+        self.selected_direction = slot.direction;
+
+        // Find first empty cell in the slot
+        let cells: Vec<(usize, usize)> = match slot.direction {
+            Direction::Across => (slot.col..slot.col + slot.length)
+                .map(|c| (slot.row, c))
+                .collect(),
+            Direction::Down => (slot.row..slot.row + slot.length)
+                .map(|r| (r, slot.col))
+                .collect(),
+        };
+
+        // Find first empty cell; if all filled, select the first cell
+        let target = cells
+            .iter()
+            .find(|&&(r, c)| self.user_grid[r][c].is_none())
+            .copied()
+            .unwrap_or_else(|| cells[0]);
+
+        self.selected_cell = Some(target);
+    }
 }
 
 /// The top-level game state machine.
