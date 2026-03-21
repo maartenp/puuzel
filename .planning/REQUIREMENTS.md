@@ -29,11 +29,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Puzzle Generation
 
-- [ ] **PGEN-01**: User can start a new puzzle by selecting difficulty level (easy, medium, hard)
-- [ ] **PGEN-02**: Generator uses constraint satisfaction with backtracking to place words
-- [ ] **PGEN-03**: Generator produces puzzles in under 10 seconds on typical hardware
-- [ ] **PGEN-04**: Generator avoids reusing words from the last N puzzles (word history tracking)
-- [ ] **PGEN-05**: Generated puzzles have numbered clues for across and down words
+- [x] **PGEN-01**: User can start a new puzzle by selecting difficulty level (easy, medium, hard)
+- [x] **PGEN-02**: Generator uses constraint satisfaction with backtracking to place words
+- [x] **PGEN-03**: Generator produces puzzles in under 10 seconds on typical hardware
+- [x] **PGEN-04**: Generator avoids reusing words from the last N puzzles (word history tracking)
+- [x] **PGEN-05**: Generated puzzles have numbered clues for across and down words
 
 ### Grid Interaction
 
@@ -119,11 +119,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Complete |
-| PGEN-01 | Phase 2 | Pending |
-| PGEN-02 | Phase 2 | Pending |
-| PGEN-03 | Phase 2 | Pending |
-| PGEN-04 | Phase 2 | Pending |
-| PGEN-05 | Phase 2 | Pending |
+| PGEN-01 | Phase 2 | Complete |
+| PGEN-02 | Phase 2 | Complete |
+| PGEN-03 | Phase 2 | Complete |
+| PGEN-04 | Phase 2 | Complete |
+| PGEN-05 | Phase 2 | Complete |
 | INTR-01 | Phase 2 | Pending |
 | INTR-02 | Phase 2 | Pending |
 | INTR-03 | Phase 2 | Pending |

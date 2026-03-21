@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-02-PLAN.md (grid generator)
-last_updated: "2026-03-21T21:08:27.949Z"
+stopped_at: Completed 02-01-PLAN.md (game state machine and entry point)
+last_updated: "2026-03-21T21:51:52.848Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** A playable, enjoyable crossword puzzle that generates fresh Dutch puzzles on demand
-**Current focus:** Phase 01 — foundation
+**Current focus:** Phase 02 — playable-game
 
 ## Current Position
 
-Phase: 01 (foundation) — EXECUTING
-Plan: 3 of 3
+Phase: 02 (playable-game) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Plan: 3 of 3
 | Phase 01-foundation P01 | 2 | 2 tasks | 7 files |
 | Phase 01-foundation P03 | 208 | 2 tasks | 9 files |
 | Phase 01-foundation P02 | 660 | 2 tasks | 4 files |
+| Phase 02 P01 | 15 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: 2x2 all-white block constraint removed — European/Dutch grids permit open white areas; the no-2x2 rule is American (NYT), not European
 - [Phase 01-foundation]: CSP MRV heuristic + forward checking selected for grid generation — prioritizes most constrained slots first
 - [Phase 01-foundation]: Per-placement connectivity check in seed_black_squares — ensures connected white region invariant during black square placement
+- [Phase 02]: GameState::Generating uses mpsc::Receiver — GameState cannot derive PartialEq/Clone
+- [Phase 02]: PuzzleState::from_filled_grid called inside background thread where Connection lives (Connection: Send not Sync)
+- [Phase 02]: assign_clue_numbers: words of length 1 never numbered — right/below neighbor must be White (D-18)
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T21:08:27.946Z
-Stopped at: Completed 01-02-PLAN.md (grid generator)
+Last session: 2026-03-21T21:51:52.845Z
+Stopped at: Completed 02-01-PLAN.md (game state machine and entry point)
 Resume file: None
