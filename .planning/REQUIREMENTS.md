@@ -20,12 +20,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Word & Clue Database
 
-- [ ] **DATA-01**: Dutch word list sourced and filtered for crossword suitability
-- [ ] **DATA-02**: AI-generated clues for each word at three difficulty levels (easy, medium, hard)
-- [ ] **DATA-03**: Clues are straightforward definitions (not cryptic or wordplay)
+- [x] **DATA-01**: Dutch word list sourced and filtered for crossword suitability
+- [x] **DATA-02**: AI-generated clues for each word at three difficulty levels (easy, medium, hard)
+- [x] **DATA-03**: Clues are straightforward definitions (not cryptic or wordplay)
 - [x] **DATA-04**: Word+clue database bundled with app in SQLite format
 - [x] **DATA-05**: Database includes word frequency/commonness metadata for difficulty filtering
-- [ ] **DATA-06**: AI clue generation includes self-verification pass (model answers its own clue to validate)
+- [x] **DATA-06**: AI clue generation includes self-verification pass (model answers its own clue to validate)
 
 ### Puzzle Generation
 
@@ -113,12 +113,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRID-06 | Phase 1 | Pending |
 | GRID-07 | Phase 1 | Pending |
 | GRID-08 | Phase 1 | Pending |
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
 | DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
-| DATA-06 | Phase 1 | Pending |
+| DATA-06 | Phase 1 | Complete |
 | PGEN-01 | Phase 2 | Pending |
 | PGEN-02 | Phase 2 | Pending |
 | PGEN-03 | Phase 2 | Pending |
