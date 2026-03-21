@@ -146,6 +146,44 @@ Antwoord ALLEEN als een JSON-array:
         return []
 
 
+def clue_contains_word_part(word: str, clue: str) -> bool:
+    """Check if any word in the clue is contained in the answer or vice versa.
+
+    Splits the clue into whitespace-delimited tokens and checks:
+    1. Is any clue token (3+ chars) a substring of the answer? (catches "houten" → no, but "hout" in HOUTROT → yes)
+    2. Is the full answer word in the clue?
+
+    Uses word stems by stripping common Dutch suffixes (en, e, s, er, je, jes, te, ste, ing)
+    to catch inflected forms like "houten" → "hout".
+    """
+    word_lower = word.lower()
+    clue_lower = clue.lower()
+
+    # Full word check
+    if word_lower in clue_lower:
+        return True
+
+    # Strip common Dutch suffixes to get stems
+    suffixes = ("sten", "jes", "ing", "ste", "en", "er", "je", "te", "ig", "e", "s")
+
+    def stem(w):
+        """Return word and its stemmed form."""
+        for suf in suffixes:
+            if w.endswith(suf) and len(w) - len(suf) >= 3:
+                return w[:len(w) - len(suf)]
+        return w
+
+    for token in clue_lower.split():
+        token_stem = stem(token)
+        # Is the clue token (or its stem) found inside the answer word?
+        if len(token_stem) >= 3 and token_stem in word_lower:
+            return True
+        if len(token) >= 3 and token in word_lower:
+            return True
+
+    return False
+
+
 def commonness_to_difficulty(commonness: int) -> str:
     """Derive word difficulty from commonness score.
 
@@ -188,11 +226,14 @@ def build_result(word_info: dict, clue_dict: dict, verification_map: dict) -> di
 
     clues_out = []
     if clue_text:
-        clues_out.append({
-            "difficulty": difficulty,
-            "text": clue_text,
-            "verified": verified,
-        })
+        if clue_contains_word_part(word, clue_text):
+            print(f"  [REJECT] {word}: clue contains word part → \"{clue_text}\"")
+        else:
+            clues_out.append({
+                "difficulty": difficulty,
+                "text": clue_text,
+                "verified": verified,
+            })
 
     return {
         "word": word,
