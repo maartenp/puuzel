@@ -62,6 +62,11 @@ while [ "$START" -lt "$TOTAL" ]; do
     # After first successful batch, skip quality gate for subsequent batches
     GATE_FLAG="--no-gate"
     START=$((START + BATCH_SIZE))
+
+    # Update the database incrementally after each batch
+    echo "Updating database with latest results..."
+    python tools/write_database.py
+    echo ""
 done
 
 echo ""

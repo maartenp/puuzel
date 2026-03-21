@@ -117,15 +117,13 @@ def insert_words(conn: sqlite3.Connection, verified_clues: list) -> tuple:
         if is_archaic:
             archaic_count += 1
 
-        # Insert clues (only verified ones)
+        # Insert clues
         for clue in item.get("clues", []):
             clue_text = clue.get("text", "").strip()
             verified = 1 if clue.get("verified", False) else 0
 
             if not clue_text:
                 continue
-            if not verified:
-                continue  # Only insert verified clues
 
             cursor.execute(
                 """INSERT INTO clues (word_id, difficulty, clue_text, verified, thumbs_down)
@@ -171,12 +169,56 @@ def get_db_size(db_path: str) -> str:
     return f"{size / (1024 * 1024):.1f} MB"
 
 
+def load_clue_files(input_path: str) -> list:
+    """Load clues from a single file or all batch files in a directory.
+
+    Supports:
+    - A single JSON file (verified_clues.json or any batch file)
+    - A directory containing clues_batch_*.json files
+    - The default tools/output/ directory (auto-discovers batch files)
+
+    Deduplicates by word name.
+    """
+    import glob
+
+    files_to_load = []
+
+    if os.path.isfile(input_path):
+        files_to_load = [input_path]
+    elif os.path.isdir(input_path):
+        files_to_load = sorted(glob.glob(os.path.join(input_path, "clues_batch_*.json")))
+        if not files_to_load:
+            # Try verified_clues.json as fallback
+            merged = os.path.join(input_path, "verified_clues.json")
+            if os.path.exists(merged):
+                files_to_load = [merged]
+    else:
+        return []
+
+    all_words = []
+    for f in files_to_load:
+        print(f"  Loading {f}...")
+        with open(f, 'r', encoding='utf-8') as fh:
+            all_words.extend(json.load(fh))
+
+    # Deduplicate by word
+    seen = set()
+    unique = []
+    for w in all_words:
+        word = w.get("word", "")
+        if word and word not in seen:
+            seen.add(word)
+            unique.append(w)
+
+    return unique
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Write verified clues to SQLite database (data/puuzel.db)"
     )
-    parser.add_argument("--input", default="tools/output/verified_clues.json",
-                        help="Path to verified_clues.json (default: tools/output/verified_clues.json)")
+    parser.add_argument("--input", default="tools/output",
+                        help="Path to clue JSON file or directory with batch files (default: tools/output)")
     parser.add_argument("--db", default="data/puuzel.db",
                         help="Path to output SQLite database (default: data/puuzel.db)")
     args = parser.parse_args()
@@ -184,15 +226,13 @@ def main():
     input_path = args.input
     db_path = args.db
 
-    if not os.path.exists(input_path):
-        print(f"Error: input file not found: {input_path}", file=sys.stderr)
-        print("Run './tools/generate_clues_batch.sh' first.", file=sys.stderr)
+    verified_clues = load_clue_files(input_path)
+    if not verified_clues:
+        print(f"Error: no clue files found at: {input_path}", file=sys.stderr)
+        print("Run './tools/generate_clues_batch.sh' first, or point --input to a batch file.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Reading verified clues from {input_path}...")
-    with open(input_path, 'r', encoding='utf-8') as f:
-        verified_clues = json.load(f)
-    print(f"Loaded {len(verified_clues):,} word records")
+    print(f"Loaded {len(verified_clues):,} unique word records")
 
     print(f"\nCreating database at {db_path}...")
     os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else ".", exist_ok=True)

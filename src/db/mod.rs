@@ -48,7 +48,8 @@ pub fn insert_clue(
 }
 
 /// Query words by grid length and minimum commonness score at a given difficulty level.
-/// Only returns words that have at least one verified, non-thumbs-down clue at the requested difficulty.
+/// Returns words that have at least one non-thumbs-down clue at the requested difficulty,
+/// preferring verified clues but accepting unverified ones.
 /// Returns up to 500 words in random order.
 pub fn words_for_length(
     conn: &rusqlite::Connection,
@@ -59,7 +60,7 @@ pub fn words_for_length(
     let mut stmt = conn.prepare(
         "SELECT w.id, w.word FROM words w
          WHERE w.grid_length = ?1 AND w.commonness_score >= ?2
-         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.difficulty = ?3 AND c.verified = 1 AND c.thumbs_down = 0)
+         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.difficulty = ?3 AND c.thumbs_down = 0)
          ORDER BY RANDOM() LIMIT 500",
     )?;
     let rows = stmt.query_map(
@@ -69,7 +70,8 @@ pub fn words_for_length(
     rows.collect()
 }
 
-/// Get a verified, non-thumbs-down clue for a word at the given difficulty level.
+/// Get a non-thumbs-down clue for a word at the given difficulty level.
+/// Prefers verified clues but falls back to unverified ones.
 /// Returns None if no such clue exists.
 pub fn get_clue_for_word(
     conn: &rusqlite::Connection,
@@ -77,7 +79,7 @@ pub fn get_clue_for_word(
     difficulty: &str,
 ) -> rusqlite::Result<Option<String>> {
     let mut stmt = conn.prepare(
-        "SELECT clue_text FROM clues WHERE word_id = ?1 AND difficulty = ?2 AND verified = 1 AND thumbs_down = 0 ORDER BY RANDOM() LIMIT 1",
+        "SELECT clue_text FROM clues WHERE word_id = ?1 AND difficulty = ?2 AND thumbs_down = 0 ORDER BY verified DESC, RANDOM() LIMIT 1",
     )?;
     let mut rows = stmt.query_map(rusqlite::params![word_id, difficulty], |row| {
         row.get::<_, String>(0)
@@ -135,19 +137,18 @@ mod tests {
     }
 
     #[test]
-    fn test_clue_verified_filter() {
+    fn test_clue_includes_unverified() {
         let conn = open_in_memory().expect("open_in_memory failed");
 
         let id1 = insert_word(&conn, "BOOM", 4, 5, false, false).expect("insert failed");
         insert_clue(&conn, id1, "easy", "Groot gewas", true).expect("insert_clue failed");
 
         let id2 = insert_word(&conn, "ROOS", 4, 5, false, false).expect("insert failed");
-        // Insert unverified clue
+        // Insert unverified clue — should still be included
         insert_clue(&conn, id2, "easy", "Bloem", false).expect("insert_clue failed");
 
         let results = words_for_length(&conn, 4, 1, "easy").expect("words_for_length failed");
-        assert_eq!(results.len(), 1, "Only BOOM with verified clue should be returned");
-        assert_eq!(results[0].1, "BOOM");
+        assert_eq!(results.len(), 2, "Both verified and unverified clues should be included");
     }
 
     #[test]
