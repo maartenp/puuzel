@@ -12,7 +12,7 @@ Build a native Dutch crossword puzzle game in Rust with macroquad. The work foll
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Grid engine and Dutch word/clue database — the two blocking dependencies
+- [x] **Phase 1: Foundation** - Grid engine and Dutch word/clue database — the two blocking dependencies (completed 2026-03-21)
 - [ ] **Phase 2: Playable Game** - Rendering, input, puzzle generation, and game flow — the first version you can actually play
 - [ ] **Phase 3: Session Continuity** - Puzzle state persistence and clue feedback — the game survives a restart
 - [ ] **Phase 4: Distribution** - Flatpak packaging, auto-updates, and macOS build — ships to the target user
@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The bundled SQLite database contains Dutch words with clues at easy, medium, and hard difficulty, each clue having passed an AI self-verification round
   4. The generator respects unchecked letters and permits two-letter words, matching European grid conventions
   5. Grid black-square density and word length distribution visibly differ between easy and hard difficulty
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold, core grid types, IJ tokenization, SQLite schema and query layer
-- [ ] 01-02-PLAN.md — CSP backtracking grid generator with difficulty-dependent density and word selection
+- [x] 01-02-PLAN.md — CSP backtracking grid generator with difficulty-dependent density and word selection
 - [x] 01-03-PLAN.md — Python word/clue pipeline: OpenTaal filter, Claude Batch API clue generation, database writer
 
 ### Phase 2: Playable Game
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 2/3 | In Progress|  |
+| 1. Foundation | 3/3 | Complete   | 2026-03-21 |
 | 2. Playable Game | 0/TBD | Not started | - |
 | 3. Session Continuity | 0/TBD | Not started | - |
 | 4. Distribution | 0/TBD | Not started | - |

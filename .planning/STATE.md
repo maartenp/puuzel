@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-03 Tasks 1-2; Task 3 awaiting human-action checkpoint (pipeline run)
-last_updated: "2026-03-21T20:22:32.381Z"
+stopped_at: Completed 01-02-PLAN.md (grid generator)
+last_updated: "2026-03-21T21:08:27.949Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -48,6 +48,7 @@ Plan: 3 of 3
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 2 | 2 tasks | 7 files |
 | Phase 01-foundation P03 | 208 | 2 tasks | 9 files |
+| Phase 01-foundation P02 | 660 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: IJ digraph handled as 2-char token 'IJ' (not Unicode ligature) — consistent with D-24/D-25
 - [Phase 01-foundation]: Only LLM-verified clues inserted into SQLite — DATA-06 self-verification pass
 - [Phase 01-foundation]: claude-haiku-4-5-20251001 model for clue generation via Max subscription CLI (D-32)
+- [Phase 01-foundation]: 2x2 all-white block constraint removed — European/Dutch grids permit open white areas; the no-2x2 rule is American (NYT), not European
+- [Phase 01-foundation]: CSP MRV heuristic + forward checking selected for grid generation — prioritizes most constrained slots first
+- [Phase 01-foundation]: Per-placement connectivity check in seed_black_squares — ensures connected white region invariant during black square placement
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T20:22:32.378Z
-Stopped at: Completed 01-03 Tasks 1-2; Task 3 awaiting human-action checkpoint (pipeline run)
+Last session: 2026-03-21T21:08:27.946Z
+Stopped at: Completed 01-02-PLAN.md (grid generator)
 Resume file: None

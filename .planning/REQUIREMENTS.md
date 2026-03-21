@@ -9,14 +9,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Grid Engine
 
-- [ ] **GRID-01**: App generates valid Dutch/European-style crossword grids (~20x20)
-- [ ] **GRID-02**: Generated grids have connected white squares (one contiguous region)
+- [x] **GRID-01**: App generates valid Dutch/European-style crossword grids (~20x20)
+- [x] **GRID-02**: Generated grids have connected white squares (one contiguous region)
 - [x] **GRID-03**: IJ digraph is treated as a single cell in the grid
-- [ ] **GRID-04**: Unchecked letters are permitted (not every letter needs both across and down)
-- [ ] **GRID-05**: Two-letter words are permitted in the grid
-- [ ] **GRID-06**: Black square density varies by difficulty (easy = more black squares, hard = fewer)
-- [ ] **GRID-07**: Word length varies by difficulty (easy = shorter average, hard = longer)
-- [ ] **GRID-08**: Word commonness varies by difficulty (easy = everyday words, hard = less common)
+- [x] **GRID-04**: Unchecked letters are permitted (not every letter needs both across and down)
+- [x] **GRID-05**: Two-letter words are permitted in the grid
+- [x] **GRID-06**: Black square density varies by difficulty (easy = more black squares, hard = fewer)
+- [x] **GRID-07**: Word length varies by difficulty (easy = shorter average, hard = longer)
+- [x] **GRID-08**: Word commonness varies by difficulty (easy = everyday words, hard = less common)
 
 ### Word & Clue Database
 
@@ -105,14 +105,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GRID-01 | Phase 1 | Pending |
-| GRID-02 | Phase 1 | Pending |
+| GRID-01 | Phase 1 | Complete |
+| GRID-02 | Phase 1 | Complete |
 | GRID-03 | Phase 1 | Complete |
-| GRID-04 | Phase 1 | Pending |
-| GRID-05 | Phase 1 | Pending |
-| GRID-06 | Phase 1 | Pending |
-| GRID-07 | Phase 1 | Pending |
-| GRID-08 | Phase 1 | Pending |
+| GRID-04 | Phase 1 | Complete |
+| GRID-05 | Phase 1 | Complete |
+| GRID-06 | Phase 1 | Complete |
+| GRID-07 | Phase 1 | Complete |
+| GRID-08 | Phase 1 | Complete |
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
