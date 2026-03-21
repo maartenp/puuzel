@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-01-PLAN.md (game state machine and entry point)
-last_updated: "2026-03-21T21:51:52.848Z"
+stopped_at: Completed 02-02-PLAN.md (grid rendering and input handling)
+last_updated: "2026-03-21T21:57:16.713Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 02 (playable-game) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Plan: 2 of 3
 | Phase 01-foundation P03 | 208 | 2 tasks | 9 files |
 | Phase 01-foundation P02 | 660 | 2 tasks | 4 files |
 | Phase 02 P01 | 15 | 2 tasks | 7 files |
+| Phase 02 P02 | 3 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 02]: GameState::Generating uses mpsc::Receiver — GameState cannot derive PartialEq/Clone
 - [Phase 02]: PuzzleState::from_filled_grid called inside background thread where Connection lives (Connection: Send not Sync)
 - [Phase 02]: assign_clue_numbers: words of length 1 never numbered — right/below neighbor must be White (D-18)
+- [Phase 02]: GridLayout recalculated every frame — ensures instant response to window resize (DISP-01)
+- [Phase 02]: Simple clipping for clue panel overflow instead of macroquad widgets::Group scrolling — simpler and sufficient for typical clue counts
+- [Phase 02]: IJ digraph: handle_ij_input() only promotes when answer is IJ AND user typed I — prevents false IJ promotion in non-IJ cells
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T21:51:52.845Z
-Stopped at: Completed 02-01-PLAN.md (game state machine and entry point)
+Last session: 2026-03-21T21:57:16.709Z
+Stopped at: Completed 02-02-PLAN.md (grid rendering and input handling)
 Resume file: None
