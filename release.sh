@@ -48,8 +48,11 @@ fi
 # Update Cargo.lock by running cargo check
 cargo check
 
-# Stage Cargo.toml and Cargo.lock
-git add Cargo.toml Cargo.lock
+# Write version.txt for in-app update check (fetched from raw.githubusercontent.com)
+echo "$new_version" > version.txt
+
+# Stage Cargo.toml, Cargo.lock, and version.txt
+git add Cargo.toml Cargo.lock version.txt
 
 git commit -m "chore: bump version to $new_version"
 git tag "v$new_version"

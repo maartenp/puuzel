@@ -28,17 +28,7 @@ jobs:
         uses: andyholmes/flatter@main
         with:
           files: flatpak/io.github.maartenp.puuzel.yml
-          upload-pages-artifact: false
-
-      - name: Write version.txt into pages directory
-        run: |
-          echo "${{ github.ref_name }}" | sed 's/^v//' > version.txt
-          cp version.txt ${{ steps.flatter.outputs.repo }}/version.txt
-
-      - name: Upload Pages artifact with version.txt included
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ${{ steps.flatter.outputs.repo }}
+          upload-pages-artifact: true
 
   deploy:
     needs: build

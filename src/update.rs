@@ -13,7 +13,7 @@ pub fn spawn_version_check() -> mpsc::Receiver<Option<String>> {
     thread::spawn(move || {
         let result: Option<String> = (|| {
             // ureq 3.x: read_to_string() takes no arguments and returns Result<String>
-            let body = ureq::get("https://maartenp.github.io/puuzel/version.txt")
+            let body = ureq::get("https://raw.githubusercontent.com/maartenp/puuzel/main/version.txt")
                 .call()
                 .ok()?
                 .body_mut()
