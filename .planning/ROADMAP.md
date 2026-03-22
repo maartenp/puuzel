@@ -14,8 +14,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Grid engine and Dutch word/clue database — the two blocking dependencies (completed 2026-03-21)
 - [ ] **Phase 2: Playable Game** - Rendering, input, puzzle generation, and game flow — the first version you can actually play
+- [ ] **Phase 5: Flatpak Fast-Path Delivery** - Package and ship to dad now, with CI pipeline and auto-update notifications — runs before session continuity
 - [ ] **Phase 3: Session Continuity** - Puzzle state persistence and clue feedback — the game survives a restart
-- [ ] **Phase 4: Distribution** - Flatpak packaging, auto-updates, and macOS build — ships to the target user
+- [ ] **Phase 4: Distribution** - macOS build and Flathub submission — full public distribution
 
 ## Phase Details
 
@@ -77,11 +78,24 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+1 → 2 → 5 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete   | 2026-03-21 |
-| 2. Playable Game | 3/4 | In Progress|  |
+| 2. Playable Game | 4/4 | In Progress|  |
+| 5. Flatpak Fast-Path Delivery | 0/3 | Not started | - |
 | 3. Session Continuity | 0/TBD | Not started | - |
 | 4. Distribution | 0/TBD | Not started | - |
+
+### Phase 5: Flatpak Fast-Path Delivery
+
+**Goal:** Package and ship the app to dad via Flatpak with a CI release pipeline and in-app update notifications, so he can install it now and receive updates automatically
+**Requirements**: DIST-01, DIST-02, DIST-04
+**Depends on:** Phase 2
+**Plans:** 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Flatpak manifest, AppStream metainfo, desktop entry, release script, DIST-04 verification
+- [ ] 05-02-PLAN.md — In-app version check (ureq), update notification overlay, Flatpak-aware data paths
+- [ ] 05-03-PLAN.md — GitHub Actions CI workflow, .flatpakref install file, end-to-end verification
