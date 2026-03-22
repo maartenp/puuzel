@@ -179,7 +179,7 @@ pub struct FilledGrid {
 ///
 /// Returns `Err(GeneratorError::Timeout)` if generation exceeds 8 seconds.
 /// Returns `Err(GeneratorError::NoSolution)` if the search space is exhausted.
-pub fn generate_grid(conn: &Connection, config: &DifficultyConfig) -> Result<FilledGrid, GeneratorError> {
+pub fn generate_grid(conn: &Connection, config: &DifficultyConfig, exclude: &HashSet<i64>) -> Result<FilledGrid, GeneratorError> {
     let start = Instant::now();
     let mut rng = rand::rng();
 
@@ -231,7 +231,7 @@ pub fn generate_grid(conn: &Connection, config: &DifficultyConfig) -> Result<Fil
             .collect();
 
         // Step 6: CSP backtracking
-        let used_ids: HashSet<i64> = HashSet::new();
+        let used_ids: HashSet<i64> = exclude.clone();
         match backtrack(
             slot_states,
             &word_index,
@@ -545,7 +545,7 @@ mod tests {
         let conn = build_test_db().expect("build_test_db failed");
         let config = DifficultyConfig::easy();
 
-        let result = generate_grid(&conn, &config);
+        let result = generate_grid(&conn, &config, &HashSet::new());
         match result {
             Ok(filled) => {
                 assert_eq!(filled.grid.width, 20);
@@ -583,7 +583,7 @@ mod tests {
         let conn = build_test_db().expect("build_test_db failed");
         let config = DifficultyConfig::hard();
 
-        let result = generate_grid(&conn, &config);
+        let result = generate_grid(&conn, &config, &HashSet::new());
         match result {
             Ok(filled) => {
                 assert_eq!(filled.grid.width, 20);
@@ -607,7 +607,7 @@ mod tests {
         let conn = build_test_db().expect("build_test_db failed");
         let config = DifficultyConfig::easy();
 
-        let result = generate_grid(&conn, &config);
+        let result = generate_grid(&conn, &config, &HashSet::new());
         if let Ok(filled) = result {
             assert!(
                 is_connected(&filled.grid),
@@ -621,7 +621,7 @@ mod tests {
         let conn = build_test_db().expect("build_test_db failed");
         let config = DifficultyConfig::easy();
 
-        let result = generate_grid(&conn, &config);
+        let result = generate_grid(&conn, &config, &HashSet::new());
         if let Ok(filled) = result {
             let has_two_letter = filled.slot_words.iter().any(|(slot, _)| slot.length == 2);
             assert!(
@@ -636,7 +636,7 @@ mod tests {
         let conn = build_test_db().expect("build_test_db failed");
         let config = DifficultyConfig::easy();
 
-        let result = generate_grid(&conn, &config);
+        let result = generate_grid(&conn, &config, &HashSet::new());
         if let Ok(filled) = result {
             let word_ids: Vec<i64> = filled.slot_words.iter().map(|(_, id)| *id).collect();
             let unique: HashSet<i64> = word_ids.iter().copied().collect();
@@ -656,8 +656,8 @@ mod tests {
         let easy_config = DifficultyConfig::easy();
         let hard_config = DifficultyConfig::hard();
 
-        let easy_result = generate_grid(&conn, &easy_config);
-        let hard_result = generate_grid(&conn, &hard_config);
+        let easy_result = generate_grid(&conn, &easy_config, &HashSet::new());
+        let hard_result = generate_grid(&conn, &hard_config, &HashSet::new());
 
         if let (Ok(easy), Ok(hard)) = (easy_result, hard_result) {
             let easy_avg = easy.slot_words.iter().map(|(s, _)| s.length).sum::<usize>() as f64
@@ -683,7 +683,7 @@ mod tests {
         db::insert_clue(&conn, id, "easy", "Test clue", true).expect("insert_clue failed");
 
         let config = DifficultyConfig::easy();
-        let result = generate_grid(&conn, &config);
+        let result = generate_grid(&conn, &config, &HashSet::new());
         // Should return NoSolution or Timeout — not panic
         match result {
             Err(GeneratorError::Timeout) | Err(GeneratorError::NoSolution) => {}
