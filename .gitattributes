@@ -1,0 +1,2 @@
+data/puuzel.db filter=lfs diff=lfs merge=lfs -text
+data/puuzel-old.db filter=lfs diff=lfs merge=lfs -text
