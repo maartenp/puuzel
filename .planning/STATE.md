@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-02-PLAN.md (version check and Flatpak paths)
-last_updated: "2026-03-22T17:24:39.532Z"
+stopped_at: "Checkpoint reached: 05-03 Task 2 (human-verify: GitHub Pages setup and first release)"
+last_updated: "2026-03-22T17:27:59.777Z"
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -54,6 +54,7 @@ Plan: 3 of 3
 | Phase 02 P04 | 99 | 2 tasks | 2 files |
 | Phase 05-flatpak-distirbution-and-automatic-update P01 | 2 | 2 tasks | 4 files |
 | Phase 05-flatpak-distirbution-and-automatic-update P02 | 3 | 2 tasks | 5 files |
+| Phase 05-flatpak-distirbution-and-automatic-update P03 | 1 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,7 @@ Recent decisions affecting current work:
 - [Phase 05-flatpak-distirbution-and-automatic-update]: app-id is io.github.maartenp.puuzel; runtime-version 24.08; cargo-sources.json not committed (CI generates it); release.sh uses portable sed with OS detection
 - [Phase 05]: ureq 3.x read_to_string() takes 0 args and returns Result<String> — plan example used older API; fixed inline
 - [Phase 05]: Flatpak data path detection: check /app/share/puuzel/ at runtime, fall back to data/ for dev (Pitfall 7 fix)
+- [Phase 05-flatpak-distirbution-and-automatic-update]: upload-pages-artifact: false on Flatter plus manual version.txt inject into OSTree repo dir before upload-pages-artifact@v3 — ensures version.txt is reachable at GitHub Pages root for DIST-02
 
 ### Roadmap Evolution
 
@@ -103,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T17:24:39.529Z
-Stopped at: Completed 05-02-PLAN.md (version check and Flatpak paths)
+Last session: 2026-03-22T17:27:53.292Z
+Stopped at: Checkpoint reached: 05-03 Task 2 (human-verify: GitHub Pages setup and first release)
 Resume file: None
