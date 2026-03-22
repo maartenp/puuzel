@@ -28,7 +28,16 @@ async fn main() {
 
     render::init_font().await;
 
-    let db_path = PathBuf::from("data/puuzel.db");
+    let db_path = if std::path::Path::new("/app/share/puuzel/puuzel.db").exists() {
+        PathBuf::from("/app/share/puuzel/puuzel.db")
+    } else {
+        PathBuf::from("data/puuzel.db")
+    };
+
+    let version_rx = update::spawn_version_check();
+    let mut update_available: Option<String> = None;
+    let mut update_dismissed = false;
+
     let mut state = GameState::DifficultySelection;
     let mut word_history = WordHistory::new();
     let mut input_state = input::handler::InputState::new();
@@ -37,6 +46,19 @@ async fn main() {
 
     loop {
         clear_background(BLACK);
+
+        // Check for version result (non-blocking) — D-04, D-06
+        if update_available.is_none() && !update_dismissed {
+            if let Ok(remote) = version_rx.try_recv() {
+                if let Some(ref v) = remote {
+                    if v != env!("CARGO_PKG_VERSION") {
+                        update_available = Some(v.clone());
+                    }
+                }
+                // If None (network failed) or same version, do nothing
+            }
+        }
+
         state = match state {
             GameState::DifficultySelection => {
                 if let Some(diff) = render::menu::draw_menu_screen(&mut test_mode) {
@@ -168,6 +190,14 @@ async fn main() {
                 }
             }
         };
+        // Show update notification overlay on top of everything (D-05)
+        if let Some(ref _version) = update_available {
+            if render::overlay::draw_update_notification() {
+                update_dismissed = true;
+                update_available = None;
+            }
+        }
+
         next_frame().await;
     }
 }
