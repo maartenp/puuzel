@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Puuzel
+Comment=Nederlandse kruiswoordpuzzels
+Exec=puuzel
+Icon=io.github.maartenp.puuzel
+Terminal=false
+Type=Application
+Categories=Game;BoardGame;

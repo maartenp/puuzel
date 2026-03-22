@@ -1,0 +1,36 @@
+app-id: io.github.maartenp.puuzel
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: puuzel
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/puuzel/cargo
+    CARGO_NET_OFFLINE: 'true'
+
+modules:
+  - name: puuzel
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: ..
+      - flatpak/cargo-sources.json
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --verbose
+      - install -Dm755 target/release/puuzel /app/bin/puuzel
+      - install -Dm644 flatpak/io.github.maartenp.puuzel.desktop /app/share/applications/io.github.maartenp.puuzel.desktop
+      - install -Dm644 flatpak/io.github.maartenp.puuzel.metainfo.xml /app/share/metainfo/io.github.maartenp.puuzel.metainfo.xml
+      - install -Dm644 data/puuzel.db /app/share/puuzel/puuzel.db
+      - install -Dm644 data/DejaVuSans.ttf /app/share/puuzel/DejaVuSans.ttf

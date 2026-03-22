@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.maartenp.puuzel</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Puuzel</name>
+  <summary>Dutch crossword puzzles</summary>
+  <description>
+    <p>Puuzel genereert Nederlandse kruiswoordpuzzels op aanvraag.
+       Kies een moeilijkheidsgraad en begin direct met spelen.</p>
+  </description>
+  <launchable type="desktop-id">io.github.maartenp.puuzel.desktop</launchable>
+  <releases>
+    <release version="0.1.0" date="2026-03-22"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>
