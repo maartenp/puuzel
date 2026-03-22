@@ -11,7 +11,7 @@ use crate::grid::ij::tokenize_dutch_word;
 use crate::grid::types::{Cell, Difficulty, DifficultyConfig, Direction, Grid, LetterToken, Slot};
 
 // Maximum generation time before returning Timeout error
-const TIMEOUT_SECS: f64 = 8.0;
+const TIMEOUT_SECS: f64 = 30.0;
 
 /// Error returned when grid generation fails.
 #[derive(Debug)]
@@ -52,18 +52,25 @@ struct WordIndex {
 }
 
 impl WordIndex {
-    fn build(conn: &Connection, config: &DifficultyConfig) -> Result<Self, GeneratorError> {
-        let difficulty_str = match config.difficulty {
-            Difficulty::Easy => "easy",
-            Difficulty::Medium => "medium",
-            Difficulty::Hard => "hard",
-        };
-
+    fn build(conn: &Connection, config: &DifficultyConfig, test_mode: bool) -> Result<Self, GeneratorError> {
         let mut by_length: HashMap<usize, Vec<(i64, Vec<LetterToken>)>> = HashMap::new();
 
-        // Load words for lengths 2 through 20
-        for length in 2..=20 {
-            let words = db::words_for_length(conn, length, config.min_commonness, difficulty_str)?;
+        // Load words for all lengths min_word_length through 20.
+        // We use words_for_length_any_clue (not difficulty-filtered) because grid placement
+        // only requires a word to have ANY clue — the difficulty determines which clue TEXT
+        // is displayed, not which words are placed. This dramatically increases the pool for
+        // short words (3-4 letters) where difficulty-specific clue coverage is sparse.
+        //
+        // Note: We load up to length 20 (the full grid width/height) rather than
+        // max_word_length, because the black square placement cannot reliably enforce
+        // a maximum slot length. The `viable` check is removed (all lengths are loaded).
+        // Difficulty differentiation comes from clue text difficulty, not word length.
+        for length in config.min_word_length..=20 {
+            let words = if test_mode {
+                db::words_for_length_all(conn, length)?
+            } else {
+                db::words_for_length_any_clue(conn, length, config.min_commonness)?
+            };
             if words.is_empty() {
                 continue;
             }
@@ -180,14 +187,24 @@ pub struct FilledGrid {
 /// Returns `Err(GeneratorError::Timeout)` if generation exceeds 8 seconds.
 /// Returns `Err(GeneratorError::NoSolution)` if the search space is exhausted.
 pub fn generate_grid(conn: &Connection, config: &DifficultyConfig, exclude: &HashSet<i64>) -> Result<FilledGrid, GeneratorError> {
+    generate_grid_inner(conn, config, exclude, false)
+}
+
+/// Generate a grid in test mode — uses all words regardless of clue availability.
+pub fn generate_grid_test_mode(conn: &Connection, config: &DifficultyConfig, exclude: &HashSet<i64>) -> Result<FilledGrid, GeneratorError> {
+    generate_grid_inner(conn, config, exclude, true)
+}
+
+fn generate_grid_inner(conn: &Connection, config: &DifficultyConfig, exclude: &HashSet<i64>, test_mode: bool) -> Result<FilledGrid, GeneratorError> {
     let start = Instant::now();
     let mut rng = rand::rng();
 
     // Build word index from database
-    let word_index = WordIndex::build(conn, config)?;
+    let word_index = WordIndex::build(conn, config, test_mode)?;
 
-    // Try multiple grid shapes (up to 5) before giving up
-    for _shape_attempt in 0..5 {
+    // Try up to 50 grid shapes before giving up.
+    // Each shape attempt is cheap (rejected before CSP starts if invalid).
+    for _shape_attempt in 0..50 {
         if start.elapsed().as_secs_f64() > TIMEOUT_SECS {
             return Err(GeneratorError::Timeout);
         }
@@ -201,13 +218,37 @@ pub fn generate_grid(conn: &Connection, config: &DifficultyConfig, exclude: &Has
             continue;
         }
 
-        // Step 3: Extract word slots
-        let slots = extract_slots(&grid);
+        // Step 3: Extract word slots (only slots of length >= min_word_length)
+        let slots = extract_slots(&grid, config.min_word_length);
         if slots.is_empty() {
             continue;
         }
 
-        // Check that all slot lengths have words in the index
+        // Check that ALL white cells are covered by at least one slot.
+        // When min_word_length > 2, cells in very short runs are not assigned to any slot
+        // (orphan cells). Reject shapes with orphan cells.
+        {
+            let mut covered: HashSet<(usize, usize)> = HashSet::new();
+            for slot in &slots {
+                for pos in 0..slot.length {
+                    let (r, c) = match slot.direction {
+                        Direction::Across => (slot.row, slot.col + pos),
+                        Direction::Down => (slot.row + pos, slot.col),
+                    };
+                    covered.insert((r, c));
+                }
+            }
+            let has_orphan = grid.cells.iter().enumerate().any(|(r, row)| {
+                row.iter().enumerate().any(|(c, cell)| {
+                    matches!(cell, Cell::White { .. }) && !covered.contains(&(r, c))
+                })
+            });
+            if has_orphan {
+                continue;
+            }
+        }
+
+        // Step 4: Check that all slot lengths have words in the index
         let viable = slots.iter().all(|s| {
             !word_index.words_for_length(s.length).is_empty()
         });
@@ -215,12 +256,12 @@ pub fn generate_grid(conn: &Connection, config: &DifficultyConfig, exclude: &Has
             continue;
         }
 
-        // Step 4: Build crossing map
+        // Step 5: Build crossing map
         // For each slot, find which other slots cross it and at which positions
         // crossing_map[slot_i] = Vec<(slot_j, pos_in_i, pos_in_j)>
         let crossing_map = build_crossing_map(&slots, &grid);
 
-        // Step 5: Initialize slot states
+        // Step 6: Initialize slot states
         let slot_states: Vec<SlotState> = slots
             .iter()
             .map(|s| SlotState {
@@ -230,7 +271,7 @@ pub fn generate_grid(conn: &Connection, config: &DifficultyConfig, exclude: &Has
             })
             .collect();
 
-        // Step 6: CSP backtracking
+        // Step 7: CSP backtracking
         let used_ids: HashSet<i64> = exclude.clone();
         match backtrack(
             slot_states,
@@ -670,6 +711,52 @@ mod tests {
                 "Easy avg word length ({:.2}) should be <= hard avg ({:.2})",
                 easy_avg, hard_avg
             );
+        }
+    }
+
+    /// Diagnostic test: opens the real database and tries to generate a grid for each difficulty.
+    /// Prints detailed info about what's happening. Run with:
+    ///   cargo test test_real_db_diagnostic -- --nocapture --ignored
+    #[test]
+    #[ignore]
+    fn test_real_db_diagnostic() {
+        let db_path = std::path::PathBuf::from("data/puuzel.db");
+        if !db_path.exists() {
+            eprintln!("[SKIP] data/puuzel.db not found, skipping real DB diagnostic");
+            return;
+        }
+        let conn = db::open_database(&db_path).expect("open_database failed");
+
+        for config in &[DifficultyConfig::easy(), DifficultyConfig::medium(), DifficultyConfig::hard()] {
+            let diff_name = match config.difficulty {
+                crate::grid::types::Difficulty::Easy => "easy",
+                crate::grid::types::Difficulty::Medium => "medium",
+                crate::grid::types::Difficulty::Hard => "hard",
+            };
+            eprintln!("\n=== Testing difficulty: {} ===", diff_name);
+            eprintln!("  max_word_length={} min_commonness={}", config.max_word_length, config.min_commonness);
+
+            // Check what the DB returns for each length
+            for length in 2..=config.max_word_length {
+                let words = db::words_for_length(&conn, length, config.min_commonness, diff_name)
+                    .unwrap_or_default();
+                eprintln!("  DB length={}: {} words", length, words.len());
+            }
+
+            let result = generate_grid(&conn, config, &HashSet::new());
+            match result {
+                Ok(filled) => {
+                    let mut slot_lens: HashMap<usize, usize> = HashMap::new();
+                    for (s, _) in &filled.slot_words {
+                        *slot_lens.entry(s.length).or_default() += 1;
+                    }
+                    eprintln!("  SUCCESS: {} slots placed", filled.slot_words.len());
+                    let mut sorted: Vec<_> = slot_lens.iter().collect();
+                    sorted.sort();
+                    for (l, c) in sorted { eprintln!("    length {}: {} words", l, c); }
+                }
+                Err(e) => eprintln!("  FAILED: {}", e),
+            }
         }
     }
 

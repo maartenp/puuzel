@@ -60,9 +60,9 @@ impl DifficultyConfig {
             difficulty: Difficulty::Easy,
             black_square_ratio_min: 0.35,
             black_square_ratio_max: 0.40,
-            min_word_length: 2,
+            min_word_length: 3,
             max_word_length: 8,
-            min_commonness: 4,
+            min_commonness: 2,
         }
     }
 
@@ -72,7 +72,7 @@ impl DifficultyConfig {
             difficulty: Difficulty::Medium,
             black_square_ratio_min: 0.30,
             black_square_ratio_max: 0.35,
-            min_word_length: 2,
+            min_word_length: 3,
             max_word_length: 12,
             min_commonness: 3,
         }
@@ -84,7 +84,7 @@ impl DifficultyConfig {
             difficulty: Difficulty::Hard,
             black_square_ratio_min: 0.25,
             black_square_ratio_max: 0.30,
-            min_word_length: 2,
+            min_word_length: 3,
             max_word_length: 15,
             min_commonness: 1,
         }
@@ -118,7 +118,7 @@ mod tests {
         let cfg = DifficultyConfig::easy();
         assert_eq!(cfg.black_square_ratio_min, 0.35);
         assert_eq!(cfg.black_square_ratio_max, 0.40);
-        assert_eq!(cfg.min_commonness, 4);
+        assert_eq!(cfg.min_commonness, 2);
         assert_eq!(cfg.max_word_length, 8);
     }
 

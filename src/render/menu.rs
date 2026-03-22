@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 use crate::grid::types::Difficulty;
+use crate::render::{measure, text_params};
 
 /// Button dimensions and layout constants
 const BUTTON_WIDTH: f32 = 300.0;
@@ -10,11 +11,12 @@ const TITLE_FONT_SIZE: f32 = 64.0;
 
 /// Draw the difficulty selection menu screen.
 ///
-/// Shows the "Puuzel" title and three large Dutch-labeled buttons:
+/// Shows the "Puuzel" title, three large Dutch-labeled buttons, and a test mode toggle.
 /// "Makkelijk" (Easy), "Middel" (Medium), "Moeilijk" (Hard).
 ///
 /// Returns `Some(Difficulty)` if a button was clicked this frame, or `None`.
-pub fn draw_menu_screen() -> Option<Difficulty> {
+/// The `test_mode` parameter is toggled in-place when the user clicks the toggle.
+pub fn draw_menu_screen(test_mode: &mut bool) -> Option<Difficulty> {
     clear_background(BLACK);
 
     let screen_w = screen_width();
@@ -22,10 +24,10 @@ pub fn draw_menu_screen() -> Option<Difficulty> {
 
     // Draw title centered at top third
     let title = "Puuzel";
-    let title_dims = measure_text(title, None, TITLE_FONT_SIZE as u16, 1.0);
+    let title_dims = measure(title, TITLE_FONT_SIZE as u16);
     let title_x = (screen_w - title_dims.width) / 2.0;
     let title_y = screen_h / 3.0;
-    draw_text(title, title_x, title_y, TITLE_FONT_SIZE, WHITE);
+    draw_text_ex(title, title_x, title_y, text_params(TITLE_FONT_SIZE as u16, WHITE));
 
     // Button labels and corresponding difficulties
     let buttons = [
@@ -59,14 +61,33 @@ pub fn draw_menu_screen() -> Option<Difficulty> {
         draw_rectangle(btn_x, btn_y, BUTTON_WIDTH, BUTTON_HEIGHT, btn_color);
 
         // Center text in button
-        let text_dims = measure_text(label, None, BUTTON_FONT_SIZE as u16, 1.0);
+        let text_dims = measure(label, BUTTON_FONT_SIZE as u16);
         let text_x = btn_x + (BUTTON_WIDTH - text_dims.width) / 2.0;
         let text_y = btn_y + (BUTTON_HEIGHT + text_dims.height) / 2.0;
-        draw_text(label, text_x, text_y, BUTTON_FONT_SIZE, BLACK);
+        draw_text_ex(label, text_x, text_y, text_params(BUTTON_FONT_SIZE as u16, BLACK));
 
         if hovered && mouse_clicked {
             result = Some(*difficulty);
         }
+    }
+
+    // Test mode toggle at bottom of menu
+    let toggle_font_size: u16 = 20;
+    let toggle_label = if *test_mode { "[x] Test modus (geen clues)" } else { "[ ] Test modus (geen clues)" };
+    let toggle_dims = measure(toggle_label, toggle_font_size);
+    let toggle_x = (screen_w - toggle_dims.width) / 2.0;
+    let toggle_y = buttons_start_y + total_buttons_height + 40.0;
+
+    let toggle_hovered = mouse_pos.0 >= toggle_x
+        && mouse_pos.0 <= toggle_x + toggle_dims.width
+        && mouse_pos.1 >= toggle_y - toggle_dims.height
+        && mouse_pos.1 <= toggle_y;
+
+    let toggle_color = if toggle_hovered { YELLOW } else { GRAY };
+    draw_text_ex(toggle_label, toggle_x, toggle_y, text_params(toggle_font_size, toggle_color));
+
+    if toggle_hovered && mouse_clicked {
+        *test_mode = !*test_mode;
     }
 
     result
@@ -82,10 +103,10 @@ pub fn draw_generating_screen() {
     let screen_h = screen_height();
 
     let text = "Puzzel wordt gemaakt...";
-    let font_size: f32 = 32.0;
-    let dims = measure_text(text, None, font_size as u16, 1.0);
+    let font_size: u16 = 32;
+    let dims = measure(text, font_size);
     let text_x = (screen_w - dims.width) / 2.0;
     let text_y = screen_h / 2.0 + dims.height / 2.0;
 
-    draw_text(text, text_x, text_y, font_size, WHITE);
+    draw_text_ex(text, text_x, text_y, text_params(font_size, WHITE));
 }

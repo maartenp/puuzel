@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use macroquad::prelude::*;
 
 use crate::game::state::PuzzleState;
 use crate::grid::types::{Direction, Slot};
+use crate::render::{measure, text_params};
 
 /// Returned when a clue is clicked in the panel.
 pub struct ClueClickAction {
@@ -12,6 +14,8 @@ pub struct ClueClickAction {
 /// Actions returned from the clue panel (buttons or clue clicks).
 pub enum PanelAction {
     ClueClick(ClueClickAction),
+    /// Double-click on a clue opens the rating dialog (INTR-09).
+    RateClue { word_id: i64, clue_text: String },
     NewPuzzle,
     Check,
 }
@@ -25,11 +29,16 @@ const LINE_HEIGHT: f32 = 20.0;
 const PADDING: f32 = 8.0;
 const SECTION_GAP: f32 = 8.0;
 const SCROLL_SPEED: f32 = 40.0;
+const DOUBLE_CLICK_THRESHOLD: f64 = 0.4;
 
 /// Persistent scroll state for the two clue sections.
 pub struct CluePanelState {
     pub across_scroll: f32,
     pub down_scroll: f32,
+    /// Last clue index that was clicked (for double-click detection).
+    last_click_clue: Option<(Direction, u32)>,
+    /// Time of the last clue click.
+    last_click_time: f64,
 }
 
 impl CluePanelState {
@@ -37,12 +46,15 @@ impl CluePanelState {
         CluePanelState {
             across_scroll: 0.0,
             down_scroll: 0.0,
+            last_click_clue: None,
+            last_click_time: -1.0,
         }
     }
 }
 
 /// Draw the clue panel with "Horizontaal" and "Verticaal" sections.
-pub fn draw_clue_panel(state: &PuzzleState, panel_state: &mut CluePanelState) -> Option<PanelAction> {
+/// `hover_clues` is (across_num, down_num) for the cell the mouse is hovering over in the grid.
+pub fn draw_clue_panel(state: &PuzzleState, panel_state: &mut CluePanelState, hover_clues: (Option<u32>, Option<u32>), clue_ratings: &HashMap<i64, bool>) -> Option<PanelAction> {
     let panel_x = screen_width() * PANEL_START_RATIO;
     let panel_w = screen_width() * PANEL_WIDTH_RATIO;
     let panel_h = screen_height();
@@ -74,12 +86,14 @@ pub fn draw_clue_panel(state: &PuzzleState, panel_state: &mut CluePanelState) ->
         panel_state.across_scroll -= scroll_y * SCROLL_SPEED;
     }
 
-    if let Some(action) = draw_flowing_clues(
+    if let Some(click) = draw_flowing_clues(
         &state.across_clues, Direction::Across, active_clue_num, state.selected_direction,
         panel_x + PADDING, across_start, panel_w - PADDING * 2.0, half_remaining,
-        &mut panel_state.across_scroll, mx, my, clicked,
+        &mut panel_state.across_scroll, mx, my, clicked, hover_clues.0, clue_ratings,
     ) {
-        if result.is_none() { result = Some(PanelAction::ClueClick(action)); }
+        if result.is_none() {
+            result = Some(handle_clue_click(panel_state, &state.across_clues, Direction::Across, &click));
+        }
     }
 
     // === Verticaal section ===
@@ -96,21 +110,61 @@ pub fn draw_clue_panel(state: &PuzzleState, panel_state: &mut CluePanelState) ->
         panel_state.down_scroll -= scroll_y * SCROLL_SPEED;
     }
 
-    if let Some(action) = draw_flowing_clues(
+    if let Some(click) = draw_flowing_clues(
         &state.down_clues, Direction::Down, active_clue_num, state.selected_direction,
         panel_x + PADDING, down_start, panel_w - PADDING * 2.0, remaining,
-        &mut panel_state.down_scroll, mx, my, clicked,
+        &mut panel_state.down_scroll, mx, my, clicked, hover_clues.1, clue_ratings,
     ) {
-        if result.is_none() { result = Some(PanelAction::ClueClick(action)); }
+        if result.is_none() {
+            result = Some(handle_clue_click(panel_state, &state.down_clues, Direction::Down, &click));
+        }
     }
 
     result
 }
 
+/// Handle a clue click — detect double-click for rating, otherwise navigate.
+fn handle_clue_click(
+    panel_state: &mut CluePanelState,
+    clues: &[crate::game::state::ClueEntry],
+    direction: Direction,
+    click: &ClueClickAction,
+) -> PanelAction {
+    let now = get_time();
+    let clue_entry = clues.iter().find(|e| e.slot.row == click.slot.row
+        && e.slot.col == click.slot.col
+        && e.slot.direction == click.slot.direction);
+
+    let clue_number = clue_entry.map(|e| e.number).unwrap_or(0);
+    let is_double_click = panel_state.last_click_clue == Some((direction, clue_number))
+        && (now - panel_state.last_click_time) <= DOUBLE_CLICK_THRESHOLD;
+
+    if is_double_click {
+        // Reset double-click state
+        panel_state.last_click_clue = None;
+        panel_state.last_click_time = -1.0;
+        if let Some(entry) = clue_entry {
+            return PanelAction::RateClue {
+                word_id: entry.word_id,
+                clue_text: entry.text.clone(),
+            };
+        }
+    }
+
+    // Record for next potential double-click
+    panel_state.last_click_clue = Some((direction, clue_number));
+    panel_state.last_click_time = now;
+
+    PanelAction::ClueClick(ClueClickAction {
+        slot: click.slot.clone(),
+        word_id: click.word_id,
+    })
+}
+
 fn draw_section_header(title: &str, panel_x: f32, y: f32, panel_w: f32) -> f32 {
     draw_rectangle(panel_x, y, panel_w, LINE_HEIGHT + 2.0, Color::from_rgba(50, 50, 80, 255));
     draw_text_ex(title, panel_x + PADDING, y + HEADER_FONT_SIZE as f32,
-        TextParams { font_size: HEADER_FONT_SIZE, color: WHITE, ..Default::default() });
+        text_params(HEADER_FONT_SIZE, WHITE));
     y + LINE_HEIGHT + 4.0
 }
 
@@ -132,7 +186,7 @@ fn layout_flowing_clues(
     start_y: f32,
     width: f32,
 ) -> (Vec<Span>, f32) {
-    let space_w = measure_text(" ", None, CLUE_FONT_SIZE, 1.0).width;
+    let space_w = measure(" ", CLUE_FONT_SIZE).width;
     let mut spans: Vec<Span> = Vec::new();
     let mut cx: f32 = 0.0;
     let mut cy: f32 = start_y;
@@ -141,10 +195,10 @@ fn layout_flowing_clues(
         let num_str = entry.number.to_string();
         let clue_words: Vec<&str> = entry.text.split_whitespace().collect();
 
-        let num_w = measure_text(&num_str, None, NUM_FONT_SIZE, 1.0).width;
+        let num_w = measure(&num_str, NUM_FONT_SIZE).width;
         let first_word = clue_words.first().copied().unwrap_or("");
         let first_w = if !first_word.is_empty() {
-            measure_text(first_word, None, CLUE_FONT_SIZE, 1.0).width
+            measure(first_word, CLUE_FONT_SIZE).width
         } else {
             0.0
         };
@@ -179,7 +233,7 @@ fn layout_flowing_clues(
 
         // Remaining words
         for word in clue_words.iter().skip(1) {
-            let ww = measure_text(word, None, CLUE_FONT_SIZE, 1.0).width;
+            let ww = measure(word, CLUE_FONT_SIZE).width;
             if cx + space_w + ww > width && cx > 0.0 {
                 cy += LINE_HEIGHT;
                 cx = 0.0;
@@ -213,6 +267,8 @@ fn draw_flowing_clues(
     mx: f32,
     my: f32,
     clicked: bool,
+    hover_clue_num: Option<u32>,
+    clue_ratings: &HashMap<i64, bool>,
 ) -> Option<ClueClickAction> {
     let mut result: Option<ClueClickAction> = None;
 
@@ -273,6 +329,7 @@ fn draw_flowing_clues(
         let is_hovered = visible_lines.iter().any(|&&(lx, ly, rx, ry)| {
             mx >= lx - 2.0 && mx <= rx + 2.0 && my >= ly && my <= ry
         });
+        let is_grid_hover = hover_clue_num == Some(entry.number);
 
         if is_active {
             for &&(lx, ly, rx, ry) in &visible_lines {
@@ -280,6 +337,15 @@ fn draw_flowing_clues(
                 let clip_ry = ry.min(start_y + view_height);
                 if clip_ry > clip_y {
                     draw_rectangle(lx - 2.0, clip_y, rx - lx + 4.0, clip_ry - clip_y, Color::from_rgba(70, 130, 180, 255));
+                }
+            }
+        } else if is_grid_hover {
+            // Highlight clue when hovering over a grid cell that belongs to this word
+            for &&(lx, ly, rx, ry) in &visible_lines {
+                let clip_y = ly.max(start_y);
+                let clip_ry = ry.min(start_y + view_height);
+                if clip_ry > clip_y {
+                    draw_rectangle(lx - 2.0, clip_y, rx - lx + 4.0, clip_ry - clip_y, Color::from_rgba(50, 100, 50, 255));
                 }
             }
         } else if is_hovered {
@@ -313,18 +379,28 @@ fn draw_flowing_clues(
         let entry = &clues[span.clue_idx];
         let is_active = Some(entry.number) == active_clue_num
             && selected_direction == direction;
+        let is_grid_hover = hover_clue_num == Some(entry.number);
+        let rating = clue_ratings.get(&entry.word_id);
 
         let (size, color) = if span.is_number {
-            let c = if is_active { Color::from_rgba(255, 255, 100, 255) } else { WHITE };
+            let c = if is_active { Color::from_rgba(255, 255, 100, 255) }
+                else if is_grid_hover { Color::from_rgba(150, 255, 150, 255) }
+                else if rating == Some(&true) { Color::from_rgba(100, 220, 100, 255) }
+                else if rating == Some(&false) { Color::from_rgba(220, 100, 100, 255) }
+                else { WHITE };
             (NUM_FONT_SIZE, c)
         } else {
-            let c = if is_active { WHITE } else { Color::from_rgba(200, 200, 200, 255) };
+            let c = if is_active { WHITE }
+                else if is_grid_hover { Color::from_rgba(200, 255, 200, 255) }
+                else if rating == Some(&true) { Color::from_rgba(100, 200, 100, 255) }
+                else if rating == Some(&false) { Color::from_rgba(200, 100, 100, 255) }
+                else { Color::from_rgba(200, 200, 200, 255) };
             (CLUE_FONT_SIZE, c)
         };
 
         draw_text_ex(
             &span.text, span.draw_x, text_y,
-            TextParams { font_size: size, color, ..Default::default() },
+            text_params(size, color),
         );
     }
 

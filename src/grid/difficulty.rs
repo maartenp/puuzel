@@ -7,7 +7,7 @@ use rand::RngExt;
 /// - Black square ratio is approximately within [min, max] ± small tolerance
 /// - All white cells form one connected region (GRID-02)
 /// - No isolated white cells (every white cell has at least one white orthogonal neighbor)
-/// - All word slots have length >= 2 (D-10)
+/// - All word slots have length >= config.min_word_length
 ///
 /// Note: European/Dutch crossword grids may have 2x2 white areas — this is the correct
 /// European style (unlike American crosswords, which forbid 2x2 white blocks). The plan
@@ -23,7 +23,7 @@ pub fn seed_black_squares(grid: &mut Grid, config: &DifficultyConfig, rng: &mut 
     let height = grid.height;
     let total = width * height;
 
-    for _attempt in 0..20 {
+    for _attempt in 0..50 {
         // Reset grid to all white
         for r in 0..height {
             for c in 0..width {
@@ -63,9 +63,10 @@ pub fn seed_black_squares(grid: &mut Grid, config: &DifficultyConfig, rng: &mut 
             placed += 1;
         }
 
-        // Phase 2: Fix length-1 isolated slots (cells isolated in both directions)
-        // These would be isolated letters with no valid word slot. Iterate until stable.
-        fix_length_one_slots(grid, width, height);
+        // Phase 2: Fix short slots — convert cells in runs shorter than min_word_length
+        // (in both directions) to black. Iterates until stable. Connectivity is rechecked
+        // after Phase 2 — if it fails, this attempt is discarded.
+        fix_short_slots(grid, width, height, config.min_word_length);
 
         // Verify final constraints
         if is_connected(grid) && !has_isolated_white_cells(grid, width, height) {
@@ -73,7 +74,7 @@ pub fn seed_black_squares(grid: &mut Grid, config: &DifficultyConfig, rng: &mut 
         }
     }
 
-    panic!("seed_black_squares: failed to produce a valid grid after 20 attempts");
+    panic!("seed_black_squares: failed to produce a valid grid after 50 attempts");
 }
 
 /// Returns true if placing a black square at (br, bc) would isolate any adjacent white cell.
@@ -133,11 +134,13 @@ fn has_isolated_white_cells(grid: &Grid, width: usize, height: usize) -> bool {
     false
 }
 
-/// Converts any white cell that is isolated in BOTH across and down directions to black.
-/// A cell is alone-across if both left and right are black/border.
-/// A cell is alone-down if both up and down are black/border.
-/// Iterates until stable.
-fn fix_length_one_slots(grid: &mut Grid, width: usize, height: usize) {
+/// Converts white cells that are part of runs shorter than `min_length` (in BOTH directions)
+/// to black. Iterates until stable.
+///
+/// A cell in a run shorter than min_length in the across direction AND shorter than
+/// min_length in the down direction gets converted to black. This ensures every white
+/// cell participates in at least one slot of valid length.
+fn fix_short_slots(grid: &mut Grid, width: usize, height: usize, min_length: usize) {
     loop {
         let mut changed = false;
         for r in 0..height {
@@ -145,15 +148,43 @@ fn fix_length_one_slots(grid: &mut Grid, width: usize, height: usize) {
                 if !matches!(grid.cells[r][c], Cell::White { .. }) {
                     continue;
                 }
-                let left_blocked = c == 0 || matches!(grid.cells[r][c - 1], Cell::Black);
-                let right_blocked = c + 1 >= width || matches!(grid.cells[r][c + 1], Cell::Black);
-                let alone_across = left_blocked && right_blocked;
 
-                let up_blocked = r == 0 || matches!(grid.cells[r - 1][c], Cell::Black);
-                let down_blocked = r + 1 >= height || matches!(grid.cells[r + 1][c], Cell::Black);
-                let alone_down = up_blocked && down_blocked;
+                // Measure run length in across direction (left + right + self)
+                let run_across = {
+                    let mut left = 0usize;
+                    let mut cc = c;
+                    while cc > 0 && matches!(grid.cells[r][cc - 1], Cell::White { .. }) {
+                        left += 1;
+                        cc -= 1;
+                    }
+                    let mut right = 0usize;
+                    let mut cc = c;
+                    while cc + 1 < width && matches!(grid.cells[r][cc + 1], Cell::White { .. }) {
+                        right += 1;
+                        cc += 1;
+                    }
+                    left + 1 + right
+                };
 
-                if alone_across && alone_down {
+                // Measure run length in down direction (up + down + self)
+                let run_down = {
+                    let mut up = 0usize;
+                    let mut rr = r;
+                    while rr > 0 && matches!(grid.cells[rr - 1][c], Cell::White { .. }) {
+                        up += 1;
+                        rr -= 1;
+                    }
+                    let mut down = 0usize;
+                    let mut rr = r;
+                    while rr + 1 < height && matches!(grid.cells[rr + 1][c], Cell::White { .. }) {
+                        down += 1;
+                        rr += 1;
+                    }
+                    up + 1 + down
+                };
+
+                // If too short in BOTH directions, make this cell black
+                if run_across < min_length && run_down < min_length {
                     grid.cells[r][c] = Cell::Black;
                     changed = true;
                 }
@@ -165,9 +196,12 @@ fn fix_length_one_slots(grid: &mut Grid, width: usize, height: usize) {
     }
 }
 
-/// Extract all word slots from a grid — sequences of 2+ consecutive white cells
-/// in a row (Across) or column (Down).
-pub fn extract_slots(grid: &Grid) -> Vec<Slot> {
+/// Extract all word slots from a grid — sequences of consecutive white cells
+/// in a row (Across) or column (Down) with length >= min_length.
+///
+/// `min_length` should match `DifficultyConfig::min_word_length` so that only slots
+/// that have candidates in the word index are extracted.
+pub fn extract_slots(grid: &Grid, min_length: usize) -> Vec<Slot> {
     let mut slots = Vec::new();
     let height = grid.height;
     let width = grid.width;
@@ -182,7 +216,7 @@ pub fn extract_slots(grid: &Grid) -> Vec<Slot> {
                     c += 1;
                 }
                 let length = c - start_c;
-                if length >= 2 {
+                if length >= min_length {
                     slots.push(Slot {
                         row: r,
                         col: start_c,
@@ -206,7 +240,7 @@ pub fn extract_slots(grid: &Grid) -> Vec<Slot> {
                     r += 1;
                 }
                 let length = r - start_r;
-                if length >= 2 {
+                if length >= min_length {
                     slots.push(Slot {
                         row: start_r,
                         col: c,
@@ -336,18 +370,18 @@ mod tests {
     }
 
     #[test]
-    fn test_all_slots_length_2_or_more() {
+    fn test_all_slots_length_min_or_more() {
         let config = DifficultyConfig::hard();
         let mut rng = make_rng_seeded(66666);
         let mut grid = Grid::new(20, 20);
         seed_black_squares(&mut grid, &config, &mut rng);
 
-        let slots = extract_slots(&grid);
+        let slots = extract_slots(&grid, config.min_word_length);
         for slot in &slots {
             assert!(
-                slot.length >= 2,
-                "Found slot of length {} at ({},{}) {:?}",
-                slot.length, slot.row, slot.col, slot.direction
+                slot.length >= config.min_word_length,
+                "Found slot of length {} at ({},{}) {:?} (min={})",
+                slot.length, slot.row, slot.col, slot.direction, config.min_word_length
             );
         }
     }
@@ -356,7 +390,7 @@ mod tests {
     fn test_extract_slots_across() {
         let mut grid = Grid::new(5, 1);
         grid.cells[0][2] = Cell::Black;
-        let slots = extract_slots(&grid);
+        let slots = extract_slots(&grid, 2);
         let across: Vec<_> = slots.iter().filter(|s| s.direction == Direction::Across).collect();
         assert_eq!(across.len(), 2);
         assert!(across.iter().any(|s| s.col == 0 && s.length == 2));
@@ -367,7 +401,7 @@ mod tests {
     fn test_extract_slots_down() {
         let mut grid = Grid::new(1, 5);
         grid.cells[2][0] = Cell::Black;
-        let slots = extract_slots(&grid);
+        let slots = extract_slots(&grid, 2);
         let down: Vec<_> = slots.iter().filter(|s| s.direction == Direction::Down).collect();
         assert_eq!(down.len(), 2);
         assert!(down.iter().any(|s| s.row == 0 && s.length == 2));
@@ -378,7 +412,7 @@ mod tests {
     fn test_extract_slots_single_cell_not_included() {
         let mut grid = Grid::new(3, 1);
         grid.cells[0][1] = Cell::Black;
-        let slots = extract_slots(&grid);
+        let slots = extract_slots(&grid, 2);
         let across: Vec<_> = slots.iter().filter(|s| s.direction == Direction::Across).collect();
         assert_eq!(across.len(), 0, "Length-1 runs should not produce slots");
     }

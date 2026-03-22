@@ -3,6 +3,7 @@ use macroquad::prelude::*;
 use crate::game::state::PuzzleState;
 use crate::grid::types::{Cell, Direction, LetterToken};
 use crate::render::clue_panel::PanelAction;
+use crate::render::{measure, text_params};
 
 /// Height reserved for the button bar above the grid.
 const BUTTON_BAR_HEIGHT: f32 = 44.0;
@@ -159,16 +160,12 @@ pub fn draw_grid(state: &PuzzleState, layout: &GridLayout) {
                     // Clue number in top-left corner (D-05)
                     if let Some(&num) = state.clue_numbers.get(&(row, col)) {
                         let num_str = num.to_string();
-                        let font_size = (cs * 0.25).max(10.0).min(14.0);
+                        let font_size = (cs * 0.25).max(10.0).min(14.0) as u16;
                         draw_text_ex(
                             &num_str,
                             x + 2.0,
-                            y + font_size + 1.0,
-                            TextParams {
-                                font_size: font_size as u16,
-                                color: Color::from_rgba(60, 60, 60, 255),
-                                ..Default::default()
-                            },
+                            y + font_size as f32 + 1.0,
+                            text_params(font_size, Color::from_rgba(60, 60, 60, 255)),
                         );
                     }
 
@@ -196,18 +193,15 @@ fn draw_letter(cell_x: f32, cell_y: f32, cell_size: f32, token: &LetterToken, co
         LetterToken::Single(ch) => {
             let text = ch.to_string();
             let font_size = (cell_size * 0.6) as u16;
-            let dims = measure_text(&text, None, font_size, 1.0);
+            let dims = measure(&text, font_size);
+            let mut params = text_params(font_size, color);
+            params.font_scale = 1.0;
+            params.font_scale_aspect = 1.0;
             draw_text_ex(
                 &text,
                 center_x - dims.width / 2.0,
                 center_y + dims.height / 2.0,
-                TextParams {
-                    font_size,
-                    color,
-                    font_scale: 1.0,
-                    font_scale_aspect: 1.0,
-                    ..Default::default()
-                },
+                params,
             );
         }
         LetterToken::IJ => {
@@ -216,18 +210,15 @@ fn draw_letter(cell_x: f32, cell_y: f32, cell_size: f32, token: &LetterToken, co
             let font_size = (cell_size * 0.6) as u16;
             let font_scale_aspect = 0.65_f32;
             // Measure at normal scale then account for compression
-            let dims = measure_text(text, None, font_size, 1.0);
+            let dims = measure(text, font_size);
+            let mut params = text_params(font_size, color);
+            params.font_scale = 1.0;
+            params.font_scale_aspect = font_scale_aspect;
             draw_text_ex(
                 text,
                 center_x - (dims.width * font_scale_aspect) / 2.0,
                 center_y + dims.height / 2.0,
-                TextParams {
-                    font_size,
-                    color,
-                    font_scale: 1.0,
-                    font_scale_aspect,
-                    ..Default::default()
-                },
+                params,
             );
         }
     }
@@ -252,9 +243,9 @@ pub fn draw_buttons() -> Option<PanelAction> {
     draw_rectangle(btn1_x, btn_y, btn_w, BUTTON_HEIGHT,
         if btn1_hovered { Color::from_rgba(80, 140, 80, 255) } else { Color::from_rgba(60, 120, 60, 255) });
     let label1 = "Nieuwe puzzel";
-    let dims1 = measure_text(label1, None, 15, 1.0);
+    let dims1 = measure(label1, 15);
     draw_text_ex(label1, btn1_x + (btn_w - dims1.width) / 2.0, btn_y + (BUTTON_HEIGHT + dims1.height) / 2.0,
-        TextParams { font_size: 15, color: WHITE, ..Default::default() });
+        text_params(15, WHITE));
 
     // "Controleer" button
     let btn2_x = btn1_x + btn_w + BUTTON_PADDING;
@@ -262,9 +253,9 @@ pub fn draw_buttons() -> Option<PanelAction> {
     draw_rectangle(btn2_x, btn_y, btn_w, BUTTON_HEIGHT,
         if btn2_hovered { Color::from_rgba(80, 100, 160, 255) } else { Color::from_rgba(60, 80, 140, 255) });
     let label2 = "Controleer";
-    let dims2 = measure_text(label2, None, 15, 1.0);
+    let dims2 = measure(label2, 15);
     draw_text_ex(label2, btn2_x + (btn_w - dims2.width) / 2.0, btn_y + (BUTTON_HEIGHT + dims2.height) / 2.0,
-        TextParams { font_size: 15, color: WHITE, ..Default::default() });
+        text_params(15, WHITE));
 
     if btn1_hovered && clicked {
         Some(PanelAction::NewPuzzle)

@@ -40,9 +40,11 @@ impl PuzzleState {
     ///
     /// Looks up clue text for each word in the filled grid, assigns clue numbers,
     /// and builds the across/down clue lists.
+    /// When `test_mode` is true, all clues are replaced with "no clue".
     pub fn from_filled_grid(
         filled: FilledGrid,
         conn: &rusqlite::Connection,
+        test_mode: bool,
     ) -> Result<Self, String> {
         let difficulty_str = match filled.difficulty {
             Difficulty::Easy => "easy",
@@ -69,9 +71,30 @@ impl PuzzleState {
                 }
             };
 
-            let clue_text = db::get_clue_for_word(conn, *word_id, difficulty_str)
-                .map_err(|e| e.to_string())?
-                .unwrap_or_else(|| "?".to_string());
+            let clue_text = if test_mode {
+                "no clue".to_string()
+            } else {
+                // Try the requested difficulty first; fall back to any available clue.
+                // Words are placed using the full pool (any difficulty clue), so a word
+                // may not have a clue at the exact requested difficulty.
+                let clue = db::get_clue_for_word(conn, *word_id, difficulty_str)
+                    .map_err(|e| e.to_string())?;
+                if let Some(text) = clue {
+                    text
+                } else {
+                    // Fall back through other difficulty levels
+                    let fallback_difficulties = ["easy", "medium", "hard"];
+                    let mut fallback = None;
+                    for &diff in &fallback_difficulties {
+                        if diff == difficulty_str { continue; }
+                        if let Ok(Some(text)) = db::get_clue_for_word(conn, *word_id, diff) {
+                            fallback = Some(text);
+                            break;
+                        }
+                    }
+                    fallback.unwrap_or_else(|| "?".to_string())
+                }
+            };
 
             let entry = ClueEntry {
                 number,
@@ -152,9 +175,14 @@ impl PuzzleState {
         let mut cell_in_correct_word: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
         let mut cells_to_mark: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
 
-        // First pass: find correct and incorrect words
+        // First pass: find correct and incorrect words (skip words with empty cells)
         for entry in &all_clues {
             let cells = slot_cells(&entry.slot);
+            // Only check fully filled words — skip words that still have empty cells
+            let word_fully_filled = cells.iter().all(|&(r, c)| self.user_grid[r][c].is_some());
+            if !word_fully_filled {
+                continue;
+            }
             let word_has_error = cells.iter().any(|&(r, c)| !cell_correct(r, c));
 
             if word_has_error {
@@ -174,6 +202,19 @@ impl PuzzleState {
                 self.error_cells.push((r, c));
             }
         }
+    }
+
+    /// Returns the clue numbers (across, down) for the words that pass through (row, col).
+    pub fn clue_numbers_at(&self, row: usize, col: usize) -> (Option<u32>, Option<u32>) {
+        let across = self.across_clues.iter().find(|e| {
+            let s = &e.slot;
+            s.row == row && s.col <= col && col < s.col + s.length
+        }).map(|e| e.number);
+        let down = self.down_clues.iter().find(|e| {
+            let s = &e.slot;
+            s.col == col && s.row <= row && row < s.row + s.length
+        }).map(|e| e.number);
+        (across, down)
     }
 
     /// Returns the clue number of the active word (the word containing the selected cell

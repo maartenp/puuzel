@@ -75,10 +75,10 @@ A native crossword puzzle game for Linux Mint and macOS, built in Rust with macr
 | macroquad `megaui` | Deprecated. Was macroquad's original UI, no longer maintained and removed from recent versions. | macroquad's built-in `root_ui()` or `egui-macroquad` |
 | `rand` 0.8.x | rand 0.10 is current; 0.8 API diverges on RNG initialization (`thread_rng()` replaced by `rng()`). Mixing versions in the dep tree causes confusion. | `rand = "0.10"` |
 | RON for the word database | RON has no tooling for inspecting or migrating large datasets. The clue generation pipeline runs in Python/shell before compile time. | serde_json for interchange, SQLite for runtime queries |
-| Runtime HTTP calls to Claude API | Project constraint explicitly forbids runtime API calls during gameplay. All clue data must be bundled at build time. | Offline bundled SQLite database |
+| Runtime HTTP calls to Claude API | Project constraint explicitly forbids runtime API calls during gameplay. All clue data must be bundled at build time. Startup version checks (static file fetch) are permitted. | Offline bundled SQLite database; `version.txt` on GitHub Pages for update checks |
 | `directories` < 6.0 | Breaking changes in v3+; API differs for `ProjectDirs`. Always use 6.x. | `directories = "6"` |
 | System-provided SQLite (non-bundled rusqlite) | Flatpak sandboxes don't have reliable access to system libraries. The `bundled` feature statically links SQLite into the binary, eliminating the dependency. | `rusqlite = { version = "0.39", features = ["bundled"] }` |
-| Custom update logic inside the app | Flatpak handles updates at the OS level. In-app updaters conflict with the Flatpak trust model and are unnecessary. | Publish to Flathub; rely on OS-level update tooling. |
+| Full in-app updaters (download + apply) | In-app updaters conflict with the Flatpak trust model. | Rely on `flatpak update`; app notifies user to run it. |
 ## Stack Patterns by Variant
 - Add `egui-macroquad = "0.17"` (verify version against macroquad 0.4 compatibility on crates.io before adding)
 - Use egui's `ScrollArea` and `Label` for the scrollable clue list

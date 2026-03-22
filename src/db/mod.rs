@@ -47,6 +47,25 @@ pub fn insert_clue(
     Ok(conn.last_insert_rowid())
 }
 
+/// Query all words by grid length, ignoring clues and commonness score.
+/// Used in test mode where clues are replaced with placeholder text.
+/// Returns up to 500 words in random order.
+pub fn words_for_length_all(
+    conn: &rusqlite::Connection,
+    length: usize,
+) -> rusqlite::Result<Vec<(i64, String)>> {
+    let mut stmt = conn.prepare(
+        "SELECT w.id, w.word FROM words w
+         WHERE w.grid_length = ?1
+         ORDER BY RANDOM() LIMIT 500",
+    )?;
+    let rows = stmt.query_map(
+        rusqlite::params![length as i64],
+        |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)),
+    )?;
+    rows.collect()
+}
+
 /// Query words by grid length and minimum commonness score at a given difficulty level.
 /// Returns words that have at least one non-thumbs-down clue at the requested difficulty,
 /// preferring verified clues but accepting unverified ones.
@@ -65,6 +84,32 @@ pub fn words_for_length(
     )?;
     let rows = stmt.query_map(
         rusqlite::params![length as i64, min_commonness, difficulty],
+        |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)),
+    )?;
+    rows.collect()
+}
+
+/// Query words by grid length and minimum commonness score, accepting clues at ANY difficulty.
+///
+/// Used for grid generation — the clue difficulty only determines which clue TEXT is shown
+/// to the player, not which words appear in the grid. This allows the full word pool to be
+/// used for placement, avoiding the bottleneck where few short words have clues at a specific
+/// difficulty level.
+///
+/// Returns up to 500 words in random order.
+pub fn words_for_length_any_clue(
+    conn: &rusqlite::Connection,
+    length: usize,
+    min_commonness: i32,
+) -> rusqlite::Result<Vec<(i64, String)>> {
+    let mut stmt = conn.prepare(
+        "SELECT w.id, w.word FROM words w
+         WHERE w.grid_length = ?1 AND w.commonness_score >= ?2
+         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.thumbs_down = 0)
+         ORDER BY RANDOM() LIMIT 500",
+    )?;
+    let rows = stmt.query_map(
+        rusqlite::params![length as i64, min_commonness],
         |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)),
     )?;
     rows.collect()
