@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-02-PLAN.md (grid rendering and input handling)
-last_updated: "2026-03-21T21:57:16.713Z"
+stopped_at: Completed 02-04-PLAN.md (word history wiring)
+last_updated: "2026-03-22T09:40:16.940Z"
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 5
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 02 (playable-game) — EXECUTING
-Plan: 3 of 3
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Plan: 3 of 3
 | Phase 01-foundation P02 | 660 | 2 tasks | 4 files |
 | Phase 02 P01 | 15 | 2 tasks | 7 files |
 | Phase 02 P02 | 3 | 2 tasks | 7 files |
+| Phase 02 P04 | 99 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [Phase 02]: GridLayout recalculated every frame — ensures instant response to window resize (DISP-01)
 - [Phase 02]: Simple clipping for clue panel overflow instead of macroquad widgets::Group scrolling — simpler and sufficient for typical clue counts
 - [Phase 02]: IJ digraph: handle_ij_input() only promotes when answer is IJ AND user typed I — prevents false IJ promotion in non-IJ cells
+- [Phase 02]: Exclude set integrated at CSP used_ids level (not WordIndex::build) -- minimal change, leverages existing candidates_for_constraints filtering
 
 ### Pending Todos
 
@@ -92,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T21:57:16.709Z
-Stopped at: Completed 02-02-PLAN.md (grid rendering and input handling)
+Last session: 2026-03-22T09:40:16.937Z
+Stopped at: Completed 02-04-PLAN.md (word history wiring)
 Resume file: None

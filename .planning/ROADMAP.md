@@ -52,7 +52,7 @@ Plans:
 - [x] 02-01-PLAN.md — Game state machine, types, numbering, word history, menu screen, background generation
 - [x] 02-02-PLAN.md — Grid rendering, clue panel, input handling, all interaction and display requirements
 - [x] 02-03-PLAN.md — Completion detection, congratulations overlay, new puzzle flow, visual verification
-- [ ] 02-04-PLAN.md — Gap closure: wire word history exclusion to generator (PGEN-04)
+- [x] 02-04-PLAN.md — Gap closure: wire word history exclusion to generator (PGEN-04)
 
 ### Phase 3: Session Continuity
 **Goal**: The puzzle survives an app restart and clue feedback ratings are durably recorded for future quality improvement

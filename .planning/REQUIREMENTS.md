@@ -37,14 +37,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Grid Interaction
 
-- [ ] **INTR-01**: User can click a cell to select it
-- [ ] **INTR-02**: User can click the same cell again to toggle between across and down direction
-- [ ] **INTR-03**: User can type a letter to fill the selected cell and auto-advance to the next cell in current direction
-- [ ] **INTR-04**: User can press backspace to clear current cell (if empty, move back and clear)
-- [ ] **INTR-05**: User can click a clue in the clue list to highlight that word's cells and select the first open cell
-- [ ] **INTR-06**: Clicking a cell belonging to a word locks the direction to that word's direction
-- [ ] **INTR-07**: Active word's cells are visually highlighted
-- [ ] **INTR-08**: Single-click on a filled word highlights the cells belonging to that clue
+- [x] **INTR-01**: User can click a cell to select it
+- [x] **INTR-02**: User can click the same cell again to toggle between across and down direction
+- [x] **INTR-03**: User can type a letter to fill the selected cell and auto-advance to the next cell in current direction
+- [x] **INTR-04**: User can press backspace to clear current cell (if empty, move back and clear)
+- [x] **INTR-05**: User can click a clue in the clue list to highlight that word's cells and select the first open cell
+- [x] **INTR-06**: Clicking a cell belonging to a word locks the direction to that word's direction
+- [x] **INTR-07**: Active word's cells are visually highlighted
+- [x] **INTR-08**: Single-click on a filled word highlights the cells belonging to that clue
 - [ ] **INTR-09**: Double-click on a word to rate the clue (thumbs up / thumbs down)
 
 ### Game Flow
@@ -56,11 +56,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Display
 
-- [ ] **DISP-01**: Grid and clue list fill the screen (responsive layout)
-- [ ] **DISP-02**: Large readable fonts suitable for elderly users
-- [ ] **DISP-03**: High contrast UI (white on black)
-- [ ] **DISP-04**: Grid cells are large enough for comfortable reading and clicking
-- [ ] **DISP-05**: Clue list is scrollable with current clue visible
+- [x] **DISP-01**: Grid and clue list fill the screen (responsive layout)
+- [x] **DISP-02**: Large readable fonts suitable for elderly users
+- [x] **DISP-03**: High contrast UI (white on black)
+- [x] **DISP-04**: Grid cells are large enough for comfortable reading and clicking
+- [x] **DISP-05**: Clue list is scrollable with current clue visible
 
 ### Distribution
 
@@ -124,24 +124,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PGEN-03 | Phase 2 | Complete |
 | PGEN-04 | Phase 2 | Complete |
 | PGEN-05 | Phase 2 | Complete |
-| INTR-01 | Phase 2 | Pending |
-| INTR-02 | Phase 2 | Pending |
-| INTR-03 | Phase 2 | Pending |
-| INTR-04 | Phase 2 | Pending |
-| INTR-05 | Phase 2 | Pending |
-| INTR-06 | Phase 2 | Pending |
-| INTR-07 | Phase 2 | Pending |
-| INTR-08 | Phase 2 | Pending |
+| INTR-01 | Phase 2 | Complete |
+| INTR-02 | Phase 2 | Complete |
+| INTR-03 | Phase 2 | Complete |
+| INTR-04 | Phase 2 | Complete |
+| INTR-05 | Phase 2 | Complete |
+| INTR-06 | Phase 2 | Complete |
+| INTR-07 | Phase 2 | Complete |
+| INTR-08 | Phase 2 | Complete |
 | INTR-09 | Phase 2 | Pending |
 | FLOW-01 | Phase 2 | Pending |
 | FLOW-02 | Phase 2 | Pending |
 | FLOW-03 | Phase 3 | Pending |
 | FLOW-04 | Phase 3 | Pending |
-| DISP-01 | Phase 2 | Pending |
-| DISP-02 | Phase 2 | Pending |
-| DISP-03 | Phase 2 | Pending |
-| DISP-04 | Phase 2 | Pending |
-| DISP-05 | Phase 2 | Pending |
+| DISP-01 | Phase 2 | Complete |
+| DISP-02 | Phase 2 | Complete |
+| DISP-03 | Phase 2 | Complete |
+| DISP-04 | Phase 2 | Complete |
+| DISP-05 | Phase 2 | Complete |
 | DIST-01 | Phase 4 | Pending |
 | DIST-02 | Phase 4 | Pending |
 | DIST-03 | Phase 4 | Pending |
