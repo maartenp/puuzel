@@ -17,6 +17,8 @@ jobs:
       options: --privileged
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Install Rust SDK extension
         run: flatpak install -y --noninteractive flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
