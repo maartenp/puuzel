@@ -2,6 +2,12 @@ use macroquad::prelude::*;
 
 use crate::game::state::PuzzleState;
 use crate::grid::types::{Cell, Direction, LetterToken};
+use crate::render::clue_panel::PanelAction;
+
+/// Height reserved for the button bar above the grid.
+const BUTTON_BAR_HEIGHT: f32 = 44.0;
+const BUTTON_HEIGHT: f32 = 34.0;
+const BUTTON_PADDING: f32 = 8.0;
 
 /// Layout geometry for the crossword grid panel.
 pub struct GridLayout {
@@ -15,13 +21,11 @@ pub struct GridLayout {
 
 impl GridLayout {
     /// Compute the grid layout for the current screen dimensions.
-    ///
-    /// The grid panel occupies the left 60% of the screen (D-01).
-    /// Cells are square and sized to fit the available area, with a minimum of 32px (D-02).
+    /// Grid starts below the button bar.
     pub fn compute(grid_cols: usize, grid_rows: usize) -> Self {
-        let panel_width = screen_width() * 0.60;
-        let panel_height = screen_height();
-        let padding = 16.0_f32;
+        let panel_width = screen_width() * 0.55;
+        let panel_height = screen_height() - BUTTON_BAR_HEIGHT;
+        let padding = 8.0_f32;
 
         let available_w = panel_width - padding * 2.0;
         let available_h = panel_height - padding * 2.0;
@@ -30,11 +34,11 @@ impl GridLayout {
         let cell_h = if grid_rows > 0 { available_h / grid_rows as f32 } else { 32.0 };
         let cell_size = cell_w.min(cell_h).max(32.0);
 
-        // Center the grid within the panel area
+        // Center the grid within the panel area (below button bar)
         let grid_total_w = cell_size * grid_cols as f32;
         let grid_total_h = cell_size * grid_rows as f32;
         let origin_x = padding + (available_w - grid_total_w) / 2.0;
-        let origin_y = padding + (available_h - grid_total_h) / 2.0;
+        let origin_y = BUTTON_BAR_HEIGHT + padding + (available_h - grid_total_h) / 2.0;
 
         GridLayout {
             origin_x,
@@ -109,7 +113,7 @@ pub fn draw_grid(state: &PuzzleState, layout: &GridLayout) {
     draw_rectangle(
         0.0,
         0.0,
-        screen_width() * 0.60,
+        screen_width() * 0.55,
         screen_height(),
         Color::from_rgba(20, 20, 20, 255),
     );
@@ -129,9 +133,12 @@ pub fn draw_grid(state: &PuzzleState, layout: &GridLayout) {
                 Cell::White { letter: answer } => {
                     let is_selected = state.selected_cell == Some((row, col));
                     let is_active_word = active_cells.contains(&(row, col));
+                    let is_error = state.error_cells.contains(&(row, col));
 
                     // Fill color
-                    let fill_color = if is_active_word && !is_selected {
+                    let fill_color = if is_error {
+                        Color::from_rgba(255, 200, 200, 255) // Light red for errors
+                    } else if is_active_word && !is_selected {
                         Color::from_rgba(173, 216, 230, 255) // Light blue for active word (D-03)
                     } else if is_selected {
                         Color::from_rgba(210, 230, 255, 255) // Slightly lighter blue for selected cell
@@ -223,5 +230,47 @@ fn draw_letter(cell_x: f32, cell_y: f32, cell_size: f32, token: &LetterToken, co
                 },
             );
         }
+    }
+}
+
+/// Draw the button bar above the grid. Returns a PanelAction if a button was clicked.
+pub fn draw_buttons() -> Option<PanelAction> {
+    let panel_width = screen_width() * 0.55;
+    let (mx, my) = mouse_position();
+    let clicked = is_mouse_button_pressed(MouseButton::Left);
+
+    // Background for button bar
+    draw_rectangle(0.0, 0.0, panel_width, BUTTON_BAR_HEIGHT, Color::from_rgba(25, 25, 25, 255));
+    draw_line(0.0, BUTTON_BAR_HEIGHT, panel_width, BUTTON_BAR_HEIGHT, 1.0, Color::from_rgba(60, 60, 60, 255));
+
+    let btn_y = (BUTTON_BAR_HEIGHT - BUTTON_HEIGHT) / 2.0;
+    let btn_w = 130.0_f32;
+
+    // "Nieuwe puzzel" button
+    let btn1_x = BUTTON_PADDING;
+    let btn1_hovered = mx >= btn1_x && mx <= btn1_x + btn_w && my >= btn_y && my <= btn_y + BUTTON_HEIGHT;
+    draw_rectangle(btn1_x, btn_y, btn_w, BUTTON_HEIGHT,
+        if btn1_hovered { Color::from_rgba(80, 140, 80, 255) } else { Color::from_rgba(60, 120, 60, 255) });
+    let label1 = "Nieuwe puzzel";
+    let dims1 = measure_text(label1, None, 15, 1.0);
+    draw_text_ex(label1, btn1_x + (btn_w - dims1.width) / 2.0, btn_y + (BUTTON_HEIGHT + dims1.height) / 2.0,
+        TextParams { font_size: 15, color: WHITE, ..Default::default() });
+
+    // "Controleer" button
+    let btn2_x = btn1_x + btn_w + BUTTON_PADDING;
+    let btn2_hovered = mx >= btn2_x && mx <= btn2_x + btn_w && my >= btn_y && my <= btn_y + BUTTON_HEIGHT;
+    draw_rectangle(btn2_x, btn_y, btn_w, BUTTON_HEIGHT,
+        if btn2_hovered { Color::from_rgba(80, 100, 160, 255) } else { Color::from_rgba(60, 80, 140, 255) });
+    let label2 = "Controleer";
+    let dims2 = measure_text(label2, None, 15, 1.0);
+    draw_text_ex(label2, btn2_x + (btn_w - dims2.width) / 2.0, btn_y + (BUTTON_HEIGHT + dims2.height) / 2.0,
+        TextParams { font_size: 15, color: WHITE, ..Default::default() });
+
+    if btn1_hovered && clicked {
+        Some(PanelAction::NewPuzzle)
+    } else if btn2_hovered && clicked {
+        Some(PanelAction::Check)
+    } else {
+        None
     }
 }

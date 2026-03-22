@@ -31,6 +31,8 @@ pub struct PuzzleState {
     pub clue_numbers: HashMap<(usize, usize), u32>,
     /// The difficulty level this puzzle was generated at
     pub difficulty: Difficulty,
+    /// Set of (row, col) cells that are wrong (populated by check button)
+    pub error_cells: Vec<(usize, usize)>,
 }
 
 impl PuzzleState {
@@ -96,6 +98,7 @@ impl PuzzleState {
             selected_direction: Direction::Across,
             clue_numbers,
             difficulty: filled.difficulty,
+            error_cells: Vec::new(),
         })
     }
 
@@ -111,6 +114,66 @@ impl PuzzleState {
             }
         }
         true
+    }
+
+    /// Check all words against the answer grid. Marks entire words that contain
+    /// any wrong letter, but excludes intersection cells where the crossing word
+    /// is correct.
+    pub fn check_errors(&mut self) {
+        self.error_cells.clear();
+
+        // Helper: check if a cell's user entry matches the answer
+        let cell_correct = |r: usize, c: usize| -> bool {
+            if let Cell::White { letter: Some(ref answer) } = self.grid.cells[r][c] {
+                self.user_grid[r][c] == Some(answer.clone())
+            } else {
+                true // black cells are "correct"
+            }
+        };
+
+        // Helper: get all cells in a slot
+        let slot_cells = |slot: &Slot| -> Vec<(usize, usize)> {
+            match slot.direction {
+                Direction::Across => (slot.col..slot.col + slot.length)
+                    .map(|c| (slot.row, c))
+                    .collect(),
+                Direction::Down => (slot.row..slot.row + slot.length)
+                    .map(|r| (r, slot.col))
+                    .collect(),
+            }
+        };
+
+        // Find which words have errors
+        let all_clues: Vec<&ClueEntry> = self.across_clues.iter()
+            .chain(self.down_clues.iter())
+            .collect();
+
+        // For each cell, track if it belongs to a correct word in some direction
+        let mut cell_in_correct_word: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
+        let mut cells_to_mark: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
+
+        // First pass: find correct and incorrect words
+        for entry in &all_clues {
+            let cells = slot_cells(&entry.slot);
+            let word_has_error = cells.iter().any(|&(r, c)| !cell_correct(r, c));
+
+            if word_has_error {
+                for &(r, c) in &cells {
+                    cells_to_mark.insert((r, c));
+                }
+            } else {
+                for &(r, c) in &cells {
+                    cell_in_correct_word.insert((r, c));
+                }
+            }
+        }
+
+        // Second pass: exclude cells that belong to a correct crossing word
+        for &(r, c) in &cells_to_mark {
+            if !cell_in_correct_word.contains(&(r, c)) {
+                self.error_cells.push((r, c));
+            }
+        }
     }
 
     /// Returns the clue number of the active word (the word containing the selected cell
@@ -188,6 +251,8 @@ impl PuzzleState {
         };
 
         self.user_grid[row][col] = Some(LetterToken::Single(ch.to_ascii_uppercase()));
+        // Clear error highlight on this cell when user types
+        self.error_cells.retain(|&(r, c)| !(r == row && c == col));
         self.advance_cursor();
     }
 
@@ -458,6 +523,7 @@ mod tests {
             selected_direction: Direction::Across,
             clue_numbers,
             difficulty: Difficulty::Easy,
+            error_cells: Vec::new(),
         }
     }
 

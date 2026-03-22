@@ -28,6 +28,7 @@ async fn main() {
     let mut state = GameState::DifficultySelection;
     let mut word_history = WordHistory::new();
     let mut input_state = input::handler::InputState::new();
+    let mut clue_panel_state = render::clue_panel::CluePanelState::new();
 
     loop {
         clear_background(BLACK);
@@ -73,6 +74,7 @@ async fn main() {
                             .map(|c| c.word_id)
                             .collect();
                         word_history.add_all(word_ids.into_iter());
+                        clue_panel_state = render::clue_panel::CluePanelState::new();
                         GameState::Playing(puzzle)
                     }
                     Ok(Err(e)) => {
@@ -92,19 +94,38 @@ async fn main() {
                 let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
                 input::handler::process_input(&mut puzzle, &layout, &mut input_state);
                 render::grid::draw_grid(&puzzle, &layout);
-                if let Some(click) = render::clue_panel::draw_clue_panel(&puzzle) {
-                    puzzle.select_clue(&click.slot);
+                let mut new_puzzle_requested = false;
+                // Buttons above the grid
+                if let Some(action) = render::grid::draw_buttons() {
+                    match action {
+                        render::clue_panel::PanelAction::NewPuzzle => {
+                            new_puzzle_requested = true;
+                        }
+                        render::clue_panel::PanelAction::Check => {
+                            puzzle.check_errors();
+                        }
+                        _ => {}
+                    }
+                }
+                // Clue panel (scrollable)
+                if let Some(action) = render::clue_panel::draw_clue_panel(&puzzle, &mut clue_panel_state) {
+                    match action {
+                        render::clue_panel::PanelAction::ClueClick(click) => {
+                            puzzle.select_clue(&click.slot);
+                        }
+                        _ => {}
+                    }
                 }
                 // Double-click rating dialog (INTR-09)
                 if let Some(ref ctx) = input_state.rating_dialog {
                     if let Some(_thumbs_up) = render::overlay::draw_rating_dialog(&ctx.clue_text) {
-                        // Phase 3 will persist this rating (FLOW-04)
                         log::info!("Clue rated: word_id={}, thumbs_up={}", ctx.word_id, _thumbs_up);
                         input_state.rating_dialog = None;
                     }
                 }
-                // Completion check per FLOW-01
-                if puzzle.is_complete() {
+                if new_puzzle_requested {
+                    GameState::DifficultySelection
+                } else if puzzle.is_complete() {
                     GameState::Congratulations(puzzle)
                 } else {
                     GameState::Playing(puzzle)
@@ -113,7 +134,7 @@ async fn main() {
             GameState::Congratulations(puzzle) => {
                 let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
                 render::grid::draw_grid(&puzzle, &layout);
-                render::clue_panel::draw_clue_panel(&puzzle);
+                let _ = render::clue_panel::draw_clue_panel(&puzzle, &mut clue_panel_state);
                 if render::overlay::draw_congratulations() {
                     // "Nieuwe puzzel" clicked — return to difficulty selection (FLOW-02)
                     GameState::DifficultySelection
