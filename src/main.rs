@@ -37,7 +37,6 @@ async fn main() {
                 if let Some(diff) = render::menu::draw_menu_screen() {
                     let path = db_path.clone();
                     let exclude: std::collections::HashSet<i64> = word_history.recent_ids().collect();
-                    let _ = exclude; // passed to generator via word history mechanism; reserved for future use
                     let (tx, rx) = std::sync::mpsc::channel();
                     std::thread::spawn(move || {
                         let conn = match db::open_database(&path) {
@@ -49,7 +48,7 @@ async fn main() {
                             grid::types::Difficulty::Medium => DifficultyConfig::medium(),
                             grid::types::Difficulty::Hard => DifficultyConfig::hard(),
                         };
-                        let gen_result = grid::generator::generate_grid(&conn, &config)
+                        let gen_result = grid::generator::generate_grid(&conn, &config, &exclude)
                             .map_err(|e| e.to_string());
                         match gen_result {
                             Ok(filled) => {
