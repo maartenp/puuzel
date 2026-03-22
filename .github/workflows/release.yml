@@ -42,12 +42,13 @@ jobs:
       - name: Create GitHub Release with .flatpakref
         run: |
           COMMIT_MSG=$(git log -1 --format='%s' "${{ github.ref_name }}")
+          NOTES="${COMMIT_MSG}
+
+          Download the .flatpakref file and double-click to install on Linux."
           gh release create "${{ github.ref_name }}" \
             io.github.maartenp.puuzel.flatpakref \
             --title "Puuzel ${{ github.ref_name }}" \
-            --notes "$COMMIT_MSG
-
-Download the \`.flatpakref\` file and double-click to install on Linux."
+            --notes "$NOTES"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
