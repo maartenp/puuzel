@@ -18,17 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install flatpak-cargo-generator dependencies
-        run: pip3 install aiohttp tomlkit
-
-      - name: Clone flatpak-builder-tools
-        run: git clone --depth 1 https://github.com/flatpak/flatpak-builder-tools.git
-
-      - name: Generate cargo-sources.json from Cargo.lock
-        run: |
-          python3 flatpak-builder-tools/cargo/flatpak-cargo-generator.py \
-            Cargo.lock -o flatpak/cargo-sources.json
-
       - name: Build Flatpak
         id: flatter
         uses: andyholmes/flatter@main
