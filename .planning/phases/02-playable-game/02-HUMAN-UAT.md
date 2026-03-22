@@ -3,7 +3,7 @@ status: complete
 phase: 02-playable-game
 source: [02-VERIFICATION.md]
 started: 2026-03-22T10:00:00Z
-updated: 2026-03-22T14:30:00Z
+updated: 2026-03-22T15:00:00Z
 ---
 
 ## Current Test
@@ -17,10 +17,8 @@ expected: Menu shows Puuzel title + three buttons. After difficulty select, load
 result: pass
 
 ### 2. Double-click rating dialog
-expected: Double-clicking a word (same cell within 300ms) shows a small dialog with clue text, Goed and Slecht buttons. Clicking Goed or Slecht dismisses the dialog.
-result: issue
-reported: "pass, but we should give some kind of indication that the clue was rated. (color the clue red or green in the clue list when rated). clicking on an already rated word should show how it was rated, and allow the user to change it"
-severity: minor
+expected: Double-clicking a word (same cell within 300ms) shows a small dialog with clue text, Goed and Slecht buttons. Clicking Goed or Slecht dismisses the dialog. Rated clues show green (Goed) or red (Slecht) in the clue list. Re-clicking a rated word shows current rating and allows changing it.
+result: pass
 
 ### 3. Clue panel font size adequacy (DISP-02)
 expected: Clue text at 15px is legible for a 70-year-old user without squinting at 1280x800.
@@ -29,20 +27,10 @@ result: pass
 ## Summary
 
 total: 3
-passed: 2
-issues: 1
+passed: 3
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
-
-- truth: "Double-clicking a word shows rating dialog. Rating state should be visually indicated."
-  status: failed
-  reason: "User reported: pass, but we should give some kind of indication that the clue was rated. (color the clue red or green in the clue list when rated). clicking on an already rated word should show how it was rated, and allow the user to change it"
-  severity: minor
-  test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
