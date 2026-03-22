@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-04-PLAN.md (word history wiring)
-last_updated: "2026-03-22T09:40:16.940Z"
+stopped_at: Completed 05-01-PLAN.md (Flatpak packaging files)
+last_updated: "2026-03-22T17:23:57.676Z"
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 10
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** A playable, enjoyable crossword puzzle that generates fresh Dutch puzzles on demand
-**Current focus:** Phase 02 — playable-game
+**Current focus:** Phase 05 — flatpak-distirbution-and-automatic-update
 
 ## Current Position
 
-Phase: 02 (playable-game) — EXECUTING
-Plan: 2 of 4
+Phase: 05 (flatpak-distirbution-and-automatic-update) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Plan: 2 of 4
 | Phase 02 P01 | 15 | 2 tasks | 7 files |
 | Phase 02 P02 | 3 | 2 tasks | 7 files |
 | Phase 02 P04 | 99 | 2 tasks | 2 files |
+| Phase 05-flatpak-distirbution-and-automatic-update P01 | 2 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,11 @@ Recent decisions affecting current work:
 - [Phase 02]: Simple clipping for clue panel overflow instead of macroquad widgets::Group scrolling — simpler and sufficient for typical clue counts
 - [Phase 02]: IJ digraph: handle_ij_input() only promotes when answer is IJ AND user typed I — prevents false IJ promotion in non-IJ cells
 - [Phase 02]: Exclude set integrated at CSP used_ids level (not WordIndex::build) -- minimal change, leverages existing candidates_for_constraints filtering
+- [Phase 05-flatpak-distirbution-and-automatic-update]: app-id is io.github.maartenp.puuzel; runtime-version 24.08; cargo-sources.json not committed (CI generates it); release.sh uses portable sed with OS detection
+
+### Roadmap Evolution
+
+- Phase 5 added: flatpak distirbution and automatic update
 
 ### Pending Todos
 
@@ -94,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T09:40:16.937Z
-Stopped at: Completed 02-04-PLAN.md (word history wiring)
+Last session: 2026-03-22T17:23:57.673Z
+Stopped at: Completed 05-01-PLAN.md (Flatpak packaging files)
 Resume file: None

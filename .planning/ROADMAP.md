@@ -96,6 +96,6 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Flatpak manifest, AppStream metainfo, desktop entry, release script, DIST-04 verification
+- [x] 05-01-PLAN.md — Flatpak manifest, AppStream metainfo, desktop entry, release script, DIST-04 verification
 - [ ] 05-02-PLAN.md — In-app version check (ureq), update notification overlay, Flatpak-aware data paths
 - [ ] 05-03-PLAN.md — GitHub Actions CI workflow, .flatpakref install file, end-to-end verification
