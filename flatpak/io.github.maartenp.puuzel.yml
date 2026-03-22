@@ -32,5 +32,6 @@ modules:
       - install -Dm755 target/release/puuzel /app/bin/puuzel
       - install -Dm644 flatpak/io.github.maartenp.puuzel.desktop /app/share/applications/io.github.maartenp.puuzel.desktop
       - install -Dm644 flatpak/io.github.maartenp.puuzel.metainfo.xml /app/share/metainfo/io.github.maartenp.puuzel.metainfo.xml
+      - install -Dm644 flatpak/io.github.maartenp.puuzel.svg /app/share/icons/hicolor/scalable/apps/io.github.maartenp.puuzel.svg
       - install -Dm644 data/puuzel.db /app/share/puuzel/puuzel.db
       - install -Dm644 data/DejaVuSans.ttf /app/share/puuzel/DejaVuSans.ttf
