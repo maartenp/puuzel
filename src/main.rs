@@ -3,6 +3,7 @@ mod db;
 mod game;
 mod render;
 mod input;
+mod update;
 
 use macroquad::prelude::*;
 use game::state::GameState;
@@ -16,6 +17,7 @@ fn window_conf() -> Conf {
         window_width: 1280,
         window_height: 800,
         window_resizable: true,
+        high_dpi: true,
         ..Default::default()
     }
 }
@@ -24,19 +26,23 @@ fn window_conf() -> Conf {
 async fn main() {
     env_logger::init();
 
+    render::init_font().await;
+
     let db_path = PathBuf::from("data/puuzel.db");
     let mut state = GameState::DifficultySelection;
     let mut word_history = WordHistory::new();
     let mut input_state = input::handler::InputState::new();
     let mut clue_panel_state = render::clue_panel::CluePanelState::new();
+    let mut test_mode = false;
 
     loop {
         clear_background(BLACK);
         state = match state {
             GameState::DifficultySelection => {
-                if let Some(diff) = render::menu::draw_menu_screen() {
+                if let Some(diff) = render::menu::draw_menu_screen(&mut test_mode) {
                     let path = db_path.clone();
                     let exclude: std::collections::HashSet<i64> = word_history.recent_ids().collect();
+                    let is_test_mode = test_mode;
                     let (tx, rx) = std::sync::mpsc::channel();
                     std::thread::spawn(move || {
                         let conn = match db::open_database(&path) {
@@ -48,11 +54,14 @@ async fn main() {
                             grid::types::Difficulty::Medium => DifficultyConfig::medium(),
                             grid::types::Difficulty::Hard => DifficultyConfig::hard(),
                         };
-                        let gen_result = grid::generator::generate_grid(&conn, &config, &exclude)
-                            .map_err(|e| e.to_string());
+                        let gen_result = if is_test_mode {
+                            grid::generator::generate_grid_test_mode(&conn, &config, &exclude)
+                        } else {
+                            grid::generator::generate_grid(&conn, &config, &exclude)
+                        }.map_err(|e| e.to_string());
                         match gen_result {
                             Ok(filled) => {
-                                let puzzle = game::state::PuzzleState::from_filled_grid(filled, &conn);
+                                let puzzle = game::state::PuzzleState::from_filled_grid(filled, &conn, is_test_mode);
                                 tx.send(puzzle).ok();
                             }
                             Err(e) => { tx.send(Err(e)).ok(); }
@@ -106,19 +115,36 @@ async fn main() {
                         _ => {}
                     }
                 }
-                // Clue panel (scrollable)
-                if let Some(action) = render::clue_panel::draw_clue_panel(&puzzle, &mut clue_panel_state) {
+                // Determine which clues the hovered grid cell belongs to
+                let (mx, my) = macroquad::input::mouse_position();
+                let hover_clues = layout.hit_test(mx, my, puzzle.grid.height, puzzle.grid.width)
+                    .map(|(r, c)| puzzle.clue_numbers_at(r, c))
+                    .unwrap_or((None, None));
+                // Clue panel (scrollable, with double-click rating)
+                if let Some(action) = render::clue_panel::draw_clue_panel(&puzzle, &mut clue_panel_state, hover_clues, &input_state.clue_ratings) {
                     match action {
                         render::clue_panel::PanelAction::ClueClick(click) => {
                             puzzle.select_clue(&click.slot);
+                        }
+                        render::clue_panel::PanelAction::RateClue { word_id, clue_text } => {
+                            let current_rating = input_state.clue_ratings.get(&word_id).copied();
+                            input_state.rating_dialog = Some(input::handler::RatingContext {
+                                word_id,
+                                clue_text,
+                                opened_at: macroquad::time::get_time(),
+                                current_rating,
+                            });
                         }
                         _ => {}
                     }
                 }
                 // Double-click rating dialog (INTR-09)
                 if let Some(ref ctx) = input_state.rating_dialog {
-                    if let Some(_thumbs_up) = render::overlay::draw_rating_dialog(&ctx.clue_text) {
-                        log::info!("Clue rated: word_id={}, thumbs_up={}", ctx.word_id, _thumbs_up);
+                    if let Some(rating_result) = render::overlay::draw_rating_dialog(&ctx.clue_text, ctx.opened_at, ctx.current_rating) {
+                        if let Some(thumbs_up) = rating_result {
+                            log::info!("Clue rated: word_id={}, thumbs_up={}", ctx.word_id, thumbs_up);
+                            input_state.clue_ratings.insert(ctx.word_id, thumbs_up);
+                        }
                         input_state.rating_dialog = None;
                     }
                 }
@@ -133,7 +159,7 @@ async fn main() {
             GameState::Congratulations(puzzle) => {
                 let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
                 render::grid::draw_grid(&puzzle, &layout);
-                let _ = render::clue_panel::draw_clue_panel(&puzzle, &mut clue_panel_state);
+                let _ = render::clue_panel::draw_clue_panel(&puzzle, &mut clue_panel_state, (None, None), &input_state.clue_ratings);
                 if render::overlay::draw_congratulations() {
                     // "Nieuwe puzzel" clicked — return to difficulty selection (FLOW-02)
                     GameState::DifficultySelection
