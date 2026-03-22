@@ -2,112 +2,140 @@
 phase: 05-flatpak-distirbution-and-automatic-update
 plan: 03
 subsystem: infra
-tags: [github-actions, flatpak, ci, ostree, gh-pages, flatpakref, release-pipeline]
+tags: [github-actions, flatpak, ci, ostree, gh-pages, flatpakref, release-pipeline, git-lfs]
 
-# Dependency graph
 requires:
   - phase: 05-01
     provides: Flatpak manifest at flatpak/io.github.maartenp.puuzel.yml
   - phase: 05-02
-    provides: version check URL https://maartenp.github.io/puuzel/version.txt
+    provides: In-app version check module (src/update.rs)
 provides:
-  - GitHub Actions CI pipeline (tag push -> cargo-sources.json -> Flatpak build -> version.txt inject -> GitHub Pages deploy)
+  - GitHub Actions CI pipeline (tag push -> Flatpak build -> GitHub Pages deploy)
   - .flatpakref first-install file for dad pointing at OSTree remote on GitHub Pages
-affects: [DIST-01, DIST-02, phase-04-macos]
+  - version.txt at raw.githubusercontent.com for in-app update check
+affects: [DIST-01, DIST-02]
 
-# Tech tracking
 tech-stack:
-  added: []
+  added: [andyholmes/flatter, actions/deploy-pages, git-lfs]
   patterns:
-    - "Flatter with upload-pages-artifact: false + manual version.txt inject into OSTree repo dir"
-    - "flatpak-cargo-generator.py cloned from flatpak-builder-tools, run before flatter build step"
+    - "Flatter with upload-pages-artifact: true handles Pages artifact directly"
+    - "cargo-sources.json pre-generated locally, committed to repo"
     - "freedesktop:24.08 container image matches SDK runtime-version 24.08"
+    - "version.txt served from raw.githubusercontent.com/main"
 
 key-files:
   created:
     - .github/workflows/release.yml
     - io.github.maartenp.puuzel.flatpakref
-  modified: []
+    - flatpak/io.github.maartenp.puuzel.svg
+    - flatpak/cargo-sources.json
+    - version.txt
+    - .gitattributes
+  modified:
+    - flatpak/io.github.maartenp.puuzel.yml
+    - src/update.rs
+    - release.sh
 
 key-decisions:
-  - "upload-pages-artifact: false on Flatter — manual inject of version.txt into steps.flatter.outputs.repo before upload-pages-artifact@v3"
-  - ".flatpakref has no GPGKey field — unsigned repo per D-02; GNOME Software shows untrusted source confirmation (expected)"
-  - "pip install aiohttp tomlkit for flatpak-cargo-generator.py prerequisites (tomlkit is the correct package name)"
+  - "Pre-generate cargo-sources.json locally — flatter container has no pip/pip3"
+  - "version.txt served from raw.githubusercontent.com instead of GitHub Pages"
+  - "puuzel.db tracked via Git LFS (89MB exceeds GitHub file limit)"
+  - ".flatpakref has no GPGKey field — unsigned repo; GNOME Software shows untrusted source confirmation (expected)"
 
 patterns-established:
-  - "CI Pattern: generate cargo-sources.json in CI (D-13), build Flatpak, inject version.txt into OSTree repo directory, deploy to GitHub Pages"
+  - "Release flow: release.sh bumps version + version.txt -> tag -> push -> CI builds Flatpak -> Pages deploy"
+  - "Regenerate cargo-sources.json when Cargo.lock changes"
 
 requirements-completed: [DIST-01, DIST-02]
 
-# Metrics
-duration: 1min
+duration: 45min
 completed: 2026-03-22
 ---
 
 # Phase 05 Plan 03: CI Release Pipeline and .flatpakref Summary
 
-**GitHub Actions workflow that generates cargo-sources.json, builds Flatpak via andyholmes/flatter, injects version.txt into OSTree repo dir before Pages deploy, plus .flatpakref for dad's one-click install**
+**Tag-triggered CI pipeline builds Flatpak via andyholmes/flatter, deploys OSTree repo to GitHub Pages, with .flatpakref for dad's first install**
 
 ## Performance
 
-- **Duration:** ~1 min
-- **Started:** 2026-03-22T17:26:05Z
-- **Completed:** 2026-03-22T17:27:08Z (Task 1 of 2; Task 2 is human checkpoint)
-- **Tasks:** 1 of 2 automated (Task 2 is checkpoint:human-verify)
-- **Files modified:** 2
+- **Duration:** ~45 min (including iterative CI debugging)
+- **Tasks:** 2/2 complete
+- **Files created:** 6
+- **Files modified:** 3
 
 ## Accomplishments
 
-- Created `.github/workflows/release.yml` triggering on `v*` tag push: generates `cargo-sources.json` from `Cargo.lock`, builds Flatpak via `andyholmes/flatter@main`, writes `version.txt` into `${{ steps.flatter.outputs.repo }}` before uploading pages artifact, deploys to GitHub Pages
-- Created `io.github.maartenp.puuzel.flatpakref` pointing at `https://maartenp.github.io/puuzel/` with `RuntimeRepo=https://flathub.org/repo/flathub.flatpakrepo` and no GPGKey field (unsigned per D-02)
-- Confirmed `cargo build --release` still succeeds (no regressions from these new files)
+- GitHub Actions workflow triggers on `v*` tag push, builds Flatpak, deploys to Pages
+- .flatpakref file enables one-click Flatpak install on Linux Mint
+- version.txt accessible at raw.githubusercontent.com for in-app update checks
+- App icon SVG added for AppStream metadata validation
+- cargo-sources.json pre-generated for offline Flatpak build
+- Git LFS configured for puuzel.db (89MB)
 
 ## Task Commits
 
-1. **Task 1: Create GitHub Actions release workflow and .flatpakref** - `7b6b26a` (feat)
+1. **Task 1: Create GitHub Actions workflow and .flatpakref** - `7b6b26a` (feat)
+2. **Task 2: Verify pipeline (human checkpoint)** - approved after CI runs successfully
 
-**Task 2 (checkpoint:human-verify):** Awaiting user to verify GitHub repo setup, enable Pages, review files, push first release, and confirm version.txt is reachable at https://maartenp.github.io/puuzel/version.txt
+**Iterative CI fixes:**
+- `b1e7dfe` fix: pip → pip3 (still not available in container)
+- `ca8d97a` fix: pre-generate cargo-sources.json, remove CI generation
+- `e38da06` fix: cargo-sources.json path + rust SDK extension install
+- `214c418` fix: commit uncommitted source files from earlier phases
+- `682d339` feat: add data files via Git LFS
+- `b7f9c17` fix: enable LFS checkout in CI
+- `1fa808b` fix: add app icon SVG for AppStream validation
+- `4c726a3` fix: simplify version.txt to raw.githubusercontent.com
 
 ## Files Created/Modified
 
-- `.github/workflows/release.yml` - CI pipeline: tag push -> cargo-sources.json generation -> Flatpak build -> version.txt inject -> GitHub Pages publish
-- `io.github.maartenp.puuzel.flatpakref` - First-install file for dad (double-click opens GNOME Software)
+- `.github/workflows/release.yml` - CI pipeline: tag push -> Flatpak build -> GitHub Pages deploy
+- `io.github.maartenp.puuzel.flatpakref` - First-install file for dad
+- `flatpak/io.github.maartenp.puuzel.svg` - App icon for AppStream
+- `flatpak/cargo-sources.json` - Pre-generated crate sources for offline build
+- `version.txt` - Current version for in-app update check
+- `.gitattributes` - Git LFS tracking rules
+- `flatpak/io.github.maartenp.puuzel.yml` - Fixed source path reference
+- `src/update.rs` - Changed URL to raw.githubusercontent.com
+- `release.sh` - Now writes version.txt during release
 
 ## Decisions Made
 
-- Used `upload-pages-artifact: false` on Flatter + `actions/upload-pages-artifact@v3` manually — this is the only reliable way to inject `version.txt` into the pages artifact so DIST-02 (version check) works after deploy
-- `.flatpakref` contains no `GPGKey` field — unsigned repo per D-02; GNOME Software will show "untrusted source" confirmation which is expected
-- `tomlkit` used as Python dependency (not `toml`) — this is the package name required by flatpak-cargo-generator.py
+- **cargo-sources.json pre-generated:** Flatter container has no pip/pip3. Generated locally via flatpak-cargo-generator.py. Regenerate when Cargo.lock changes.
+- **version.txt via raw.githubusercontent.com:** Injecting files into the OSTree Pages artifact was unreliable. Raw GitHub URLs are simpler and always available.
+- **Git LFS for puuzel.db:** 89MB exceeds GitHub's 100MB file limit. Font (739K) committed directly.
+- **Unsigned .flatpakref:** No GPGKey field. GNOME Software shows untrusted source confirmation — expected and acceptable.
 
 ## Deviations from Plan
 
-None — plan executed exactly as written for Task 1.
+- Plan expected cargo-sources.json generation in CI — moved to pre-generation
+- Plan expected version.txt on GitHub Pages — moved to raw.githubusercontent.com
+- Multiple CI fixes required due to flatter container constraints
 
 ## Issues Encountered
 
-None.
-
-## User Setup Required (Task 2 checkpoint)
-
-1. Verify GitHub repo exists and remote is configured (`git remote -v`)
-2. Enable GitHub Pages: Settings -> Pages -> Source: "GitHub Actions"
-3. Review `.github/workflows/release.yml`, `flatpak/io.github.maartenp.puuzel.yml`, `io.github.maartenp.puuzel.flatpakref`, and `release.sh`
-4. Run `./release.sh` to tag and push v0.1.0 (or `git tag v0.1.0 && git push && git push --tags`)
-5. Watch GitHub Actions to confirm workflow succeeds
-6. After deploy: `curl https://maartenp.github.io/puuzel/version.txt` should return `0.1.0`
+- Flatter container lacks pip/pip3 — resolved by pre-generating cargo-sources.json
+- Source path doubled (flatpak/flatpak/) — fixed relative path reference
+- Rust SDK extension not pre-installed — added explicit install step
+- Uncommitted source files caused build failures — committed missing changes
+- Missing app icon failed AppStream validation — created SVG icon
+- Pages artifact upload failed with empty path — let flatter handle it directly
+- GitHub Pages environment protection rules blocked tag deploys — user added v* rule
 
 ## Next Phase Readiness
 
-- All three Phase 05 plans deliver DIST-01, DIST-02, DIST-04 together
-- After first tag push and successful CI run, the Flatpak distribution pipeline is fully operational
-- Dad can double-click `io.github.maartenp.puuzel.flatpakref` on Linux Mint to install via GNOME Software
+- Flatpak distribution pipeline fully operational
+- Release flow: `./release.sh` → tag push → CI build → GitHub Pages deploy
+- Dad can install via .flatpakref file
 
 ---
 *Phase: 05-flatpak-distirbution-and-automatic-update*
-*Completed: 2026-03-22 (partial — checkpoint at Task 2)*
+*Completed: 2026-03-22*
 
 ## Self-Check: PASSED
 
 - FOUND: .github/workflows/release.yml
 - FOUND: io.github.maartenp.puuzel.flatpakref
-- FOUND commit 7b6b26a (Task 1)
+- FOUND: flatpak/io.github.maartenp.puuzel.svg
+- FOUND: flatpak/cargo-sources.json
+- FOUND: version.txt
