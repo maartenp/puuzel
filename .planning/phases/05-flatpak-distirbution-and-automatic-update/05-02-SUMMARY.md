@@ -118,3 +118,12 @@ None - no external service configuration required for this plan. The `version.tx
 ---
 *Phase: 05-flatpak-distirbution-and-automatic-update*
 *Completed: 2026-03-22*
+
+## Self-Check: PASSED
+
+- FOUND: src/update.rs
+- FOUND: src/render/overlay.rs
+- FOUND: .planning/phases/05-flatpak-distirbution-and-automatic-update/05-02-SUMMARY.md
+- FOUND commit 27a2c45 (Task 1: ureq dep + version check module)
+- FOUND commit fc64d29 (Task 2: integration + overlay + Flatpak paths)
+- FOUND commit 0f236aa (docs: plan metadata)

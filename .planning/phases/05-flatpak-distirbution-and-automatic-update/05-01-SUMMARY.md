@@ -115,3 +115,13 @@ None - no external service configuration required.
 ---
 *Phase: 05-flatpak-distirbution-and-automatic-update*
 *Completed: 2026-03-22*
+
+## Self-Check: PASSED
+
+- FOUND: flatpak/io.github.maartenp.puuzel.yml
+- FOUND: flatpak/io.github.maartenp.puuzel.metainfo.xml
+- FOUND: flatpak/io.github.maartenp.puuzel.desktop
+- FOUND: release.sh
+- FOUND: .planning/phases/05-flatpak-distirbution-and-automatic-update/05-01-SUMMARY.md
+- FOUND commit cc5be7f (Task 1)
+- FOUND commit fea3d09 (Task 2)
