@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-01-PLAN.md (Flatpak packaging files)
-last_updated: "2026-03-22T17:23:57.676Z"
+stopped_at: Completed 05-02-PLAN.md (version check and Flatpak paths)
+last_updated: "2026-03-22T17:24:39.532Z"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05 (flatpak-distirbution-and-automatic-update) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Plan: 2 of 3
 | Phase 02 P02 | 3 | 2 tasks | 7 files |
 | Phase 02 P04 | 99 | 2 tasks | 2 files |
 | Phase 05-flatpak-distirbution-and-automatic-update P01 | 2 | 2 tasks | 4 files |
+| Phase 05-flatpak-distirbution-and-automatic-update P02 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 02]: IJ digraph: handle_ij_input() only promotes when answer is IJ AND user typed I — prevents false IJ promotion in non-IJ cells
 - [Phase 02]: Exclude set integrated at CSP used_ids level (not WordIndex::build) -- minimal change, leverages existing candidates_for_constraints filtering
 - [Phase 05-flatpak-distirbution-and-automatic-update]: app-id is io.github.maartenp.puuzel; runtime-version 24.08; cargo-sources.json not committed (CI generates it); release.sh uses portable sed with OS detection
+- [Phase 05]: ureq 3.x read_to_string() takes 0 args and returns Result<String> — plan example used older API; fixed inline
+- [Phase 05]: Flatpak data path detection: check /app/share/puuzel/ at runtime, fall back to data/ for dev (Pitfall 7 fix)
 
 ### Roadmap Evolution
 
@@ -100,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T17:23:57.673Z
-Stopped at: Completed 05-01-PLAN.md (Flatpak packaging files)
+Last session: 2026-03-22T17:24:39.529Z
+Stopped at: Completed 05-02-PLAN.md (version check and Flatpak paths)
 Resume file: None

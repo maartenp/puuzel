@@ -84,7 +84,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete   | 2026-03-21 |
 | 2. Playable Game | 4/4 | In Progress|  |
-| 5. Flatpak Fast-Path Delivery | 0/3 | Not started | - |
+| 5. Flatpak Fast-Path Delivery | 2/3 | In Progress|  |
 | 3. Session Continuity | 0/TBD | Not started | - |
 | 4. Distribution | 0/TBD | Not started | - |
 
@@ -93,9 +93,9 @@ Plans:
 **Goal:** Package and ship the app to dad via Flatpak with a CI release pipeline and in-app update notifications, so he can install it now and receive updates automatically
 **Requirements**: DIST-01, DIST-02, DIST-04
 **Depends on:** Phase 2
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 05-01-PLAN.md — Flatpak manifest, AppStream metainfo, desktop entry, release script, DIST-04 verification
-- [ ] 05-02-PLAN.md — In-app version check (ureq), update notification overlay, Flatpak-aware data paths
+- [x] 05-02-PLAN.md — In-app version check (ureq), update notification overlay, Flatpak-aware data paths
 - [ ] 05-03-PLAN.md — GitHub Actions CI workflow, .flatpakref install file, end-to-end verification

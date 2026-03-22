@@ -65,7 +65,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Distribution
 
 - [x] **DIST-01**: App packaged as Flatpak for Linux Mint
-- [ ] **DIST-02**: Flatpak supports auto-updates via standard Flatpak tooling
+- [x] **DIST-02**: Flatpak supports auto-updates via standard Flatpak tooling
 - [ ] **DIST-03**: App builds and runs on macOS
 - [x] **DIST-04**: All Cargo dependencies use crates.io (no git deps, required for Flatpak offline build)
 
@@ -143,7 +143,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISP-04 | Phase 2 | Complete |
 | DISP-05 | Phase 2 | Complete |
 | DIST-01 | Phase 4 | Complete |
-| DIST-02 | Phase 4 | Pending |
+| DIST-02 | Phase 4 | Complete |
 | DIST-03 | Phase 4 | Pending |
 | DIST-04 | Phase 4 | Complete |
 
