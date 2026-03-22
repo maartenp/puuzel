@@ -25,7 +25,7 @@ modules:
     sources:
       - type: dir
         path: ..
-      - flatpak/cargo-sources.json
+      - cargo-sources.json
     build-commands:
       - cargo --offline fetch --manifest-path Cargo.toml --verbose
       - cargo --offline build --release --verbose
