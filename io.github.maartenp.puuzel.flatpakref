@@ -1,0 +1,8 @@
+[Flatpak Ref]
+Title=Puuzel
+Name=io.github.maartenp.puuzel
+Branch=stable
+Url=https://maartenp.github.io/puuzel/
+SuggestRemoteName=puuzel
+RuntimeRepo=https://flathub.org/repo/flathub.flatpakrepo
+IsRuntime=false
