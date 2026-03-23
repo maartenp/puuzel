@@ -56,7 +56,12 @@ git add Cargo.toml Cargo.lock version.txt
 
 git commit -m "chore: bump version to $new_version"
 git tag "v$new_version"
-git push && git push --tags
+
+echo "Pushing commit to main..."
+git push origin main
+
+echo "Pushing tag v$new_version..."
+git push origin "v$new_version"
 
 echo "Released v$new_version"
 
