@@ -30,6 +30,7 @@ jobs:
           files: flatpak/io.github.maartenp.puuzel.yml
           flatpak-builder-args: --default-branch=stable
           upload-pages-artifact: true
+          gpg-sign: ${{ secrets.GPG_PRIVATE_KEY }}
 
   release:
     needs: build
