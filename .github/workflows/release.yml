@@ -23,6 +23,10 @@ jobs:
       - name: Install Rust SDK extension
         run: flatpak install -y --noninteractive flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
 
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d | gpg --batch --import
+
       - name: Build Flatpak
         id: flatter
         uses: andyholmes/flatter@main
@@ -30,7 +34,7 @@ jobs:
           files: flatpak/io.github.maartenp.puuzel.yml
           flatpak-builder-args: --default-branch=stable
           upload-pages-artifact: true
-          gpg-sign: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-sign: 2134A870B71CDF83
 
   release:
     needs: build
