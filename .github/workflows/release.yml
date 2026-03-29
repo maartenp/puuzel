@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build-flatpak:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/andyholmes/flatter/freedesktop:24.08
@@ -36,29 +36,67 @@ jobs:
           upload-pages-artifact: true
           gpg-sign: 2134A870B71CDF83
 
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Package Windows distribution
+        shell: bash
+        run: |
+          mkdir -p puuzel-windows/data
+          cp target/release/puuzel.exe puuzel-windows/
+          cp data/puuzel.db puuzel-windows/data/
+          cp data/DejaVuSans.ttf puuzel-windows/data/
+
+      - name: Create zip archive
+        shell: pwsh
+        run: Compress-Archive -Path puuzel-windows/* -DestinationPath puuzel-windows.zip
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: puuzel-windows.zip
+
   release:
-    needs: build
+    needs: [build-flatpak, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create GitHub Release with .flatpakref
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+
+      - name: Create GitHub Release
         run: |
           COMMIT_MSG=$(git log -1 --format='%s' "${{ github.ref_name }}")
           NOTES="${COMMIT_MSG}
 
-          Download the .flatpakref file and double-click to install on Linux."
+          **Windows:** Download \`puuzel-windows.zip\`, extract, and run \`puuzel.exe\`.
+          **Linux:** Download the \`.flatpakref\` file and double-click to install."
           gh release create "${{ github.ref_name }}" \
             io.github.maartenp.puuzel.flatpakref \
+            puuzel-windows.zip \
             --title "Puuzel ${{ github.ref_name }}" \
             --notes "$NOTES"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
-    needs: build
+    needs: build-flatpak
     runs-on: ubuntu-latest
     permissions:
       pages: write

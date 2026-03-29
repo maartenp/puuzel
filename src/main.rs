@@ -4,12 +4,13 @@ mod game;
 mod render;
 mod input;
 mod update;
+mod paths;
 
 use macroquad::prelude::*;
 use game::state::GameState;
 use game::history::WordHistory;
 use grid::types::DifficultyConfig;
-use std::path::PathBuf;
+use paths::resolve_data_path;
 
 fn window_conf() -> Conf {
     Conf {
@@ -28,11 +29,8 @@ async fn main() {
 
     render::init_font().await;
 
-    let db_path = if std::path::Path::new("/app/share/puuzel/puuzel.db").exists() {
-        PathBuf::from("/app/share/puuzel/puuzel.db")
-    } else {
-        PathBuf::from("data/puuzel.db")
-    };
+    let db_path = resolve_data_path("puuzel.db");
+    log::info!("Using database: {}", db_path.display());
 
     let version_rx = update::spawn_version_check();
     let mut update_available: Option<String> = None;

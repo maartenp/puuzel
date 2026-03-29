@@ -5,20 +5,17 @@ pub mod overlay;
 
 use macroquad::prelude::*;
 use std::sync::OnceLock;
+use crate::paths::resolve_data_path;
 
 /// Global app font, loaded once at startup. Falls back to macroquad default if not set.
 static APP_FONT: OnceLock<Font> = OnceLock::new();
 
 /// Initialize the app font from a TTF file. Call once at startup.
 ///
-/// Checks the Flatpak install path first (`/app/share/puuzel/DejaVuSans.ttf`),
-/// falls back to the dev path (`data/DejaVuSans.ttf`).
+/// Checks Flatpak path, then next to the executable, then `data/` (dev).
 pub async fn init_font() {
-    let font_path = if std::path::Path::new("/app/share/puuzel/DejaVuSans.ttf").exists() {
-        "/app/share/puuzel/DejaVuSans.ttf"
-    } else {
-        "data/DejaVuSans.ttf"
-    };
+    let font_path_buf = resolve_data_path("DejaVuSans.ttf");
+    let font_path = font_path_buf.to_str().unwrap_or("data/DejaVuSans.ttf");
     match load_ttf_font(font_path).await {
         Ok(mut font) => {
             font.set_filter(FilterMode::Nearest);
