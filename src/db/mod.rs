@@ -79,7 +79,7 @@ pub fn words_for_length(
     let mut stmt = conn.prepare(
         "SELECT w.id, w.word FROM words w
          WHERE w.grid_length = ?1 AND w.commonness_score >= ?2
-         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.difficulty = ?3 AND c.thumbs_down = 0)
+         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.difficulty = ?3 AND c.thumbs_down = 0 AND c.clue_text NOT LIKE '%ouderwets%')
          ORDER BY RANDOM() LIMIT 500",
     )?;
     let rows = stmt.query_map(
@@ -105,7 +105,7 @@ pub fn words_for_length_any_clue(
     let mut stmt = conn.prepare(
         "SELECT w.id, w.word FROM words w
          WHERE w.grid_length = ?1 AND w.commonness_score >= ?2
-         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.thumbs_down = 0)
+         AND EXISTS (SELECT 1 FROM clues c WHERE c.word_id = w.id AND c.thumbs_down = 0 AND c.clue_text NOT LIKE '%ouderwets%')
          ORDER BY RANDOM() LIMIT 500",
     )?;
     let rows = stmt.query_map(
@@ -117,6 +117,7 @@ pub fn words_for_length_any_clue(
 
 /// Get a non-thumbs-down clue for a word at the given difficulty level.
 /// Prefers verified clues but falls back to unverified ones.
+/// Excludes clues containing "ouderwets" (old-fashioned).
 /// Returns None if no such clue exists.
 pub fn get_clue_for_word(
     conn: &rusqlite::Connection,
@@ -124,7 +125,7 @@ pub fn get_clue_for_word(
     difficulty: &str,
 ) -> rusqlite::Result<Option<String>> {
     let mut stmt = conn.prepare(
-        "SELECT clue_text FROM clues WHERE word_id = ?1 AND difficulty = ?2 AND thumbs_down = 0 ORDER BY verified DESC, RANDOM() LIMIT 1",
+        "SELECT clue_text FROM clues WHERE word_id = ?1 AND difficulty = ?2 AND thumbs_down = 0 AND clue_text NOT LIKE '%ouderwets%' ORDER BY verified DESC, RANDOM() LIMIT 1",
     )?;
     let mut rows = stmt.query_map(rusqlite::params![word_id, difficulty], |row| {
         row.get::<_, String>(0)

@@ -60,6 +60,11 @@ pub fn process_input(state: &mut PuzzleState, layout: &GridLayout, _input_state:
         state.backspace();
     }
 
+    // Keyboard: delete key — clear current cell without moving
+    if is_key_pressed(KeyCode::Delete) {
+        state.delete_current();
+    }
+
     // Keyboard: arrow keys per D-12
     if is_key_pressed(KeyCode::Right) {
         state.move_cursor(Direction::Across, 1);

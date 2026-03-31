@@ -36,7 +36,14 @@ async fn main() {
     let mut update_available: Option<String> = None;
     let mut update_dismissed = false;
 
-    let mut state = GameState::DifficultySelection;
+    // Try to load a saved game
+    let mut state = match game::save::load_game() {
+        Some(puzzle) => {
+            log::info!("Resuming saved game");
+            GameState::Playing(puzzle)
+        }
+        None => GameState::DifficultySelection,
+    };
     let mut word_history = WordHistory::new();
     let mut input_state = input::handler::InputState::new();
     let mut clue_panel_state = render::clue_panel::CluePanelState::new();
@@ -120,6 +127,7 @@ async fn main() {
             }
             GameState::Playing(mut puzzle) => {
                 let layout = render::grid::GridLayout::compute(puzzle.grid.width, puzzle.grid.height);
+                let prev_grid = puzzle.user_grid.clone();
                 input::handler::process_input(&mut puzzle, &layout, &mut input_state);
                 render::grid::draw_grid(&puzzle, &layout);
                 let mut new_puzzle_requested = false;
@@ -132,8 +140,15 @@ async fn main() {
                         render::clue_panel::PanelAction::Check => {
                             puzzle.check_errors();
                         }
+                        render::clue_panel::PanelAction::RevealWord => {
+                            puzzle.reveal_word();
+                        }
                         _ => {}
                     }
+                }
+                // Auto-save when the player's grid changes (typing or reveal)
+                if puzzle.user_grid != prev_grid {
+                    game::save::save_game(&puzzle);
                 }
                 // Determine which clues the hovered grid cell belongs to
                 let (mx, my) = macroquad::input::mouse_position();
@@ -169,8 +184,10 @@ async fn main() {
                     }
                 }
                 if new_puzzle_requested {
+                    game::save::delete_save();
                     GameState::DifficultySelection
                 } else if puzzle.is_complete() {
+                    game::save::delete_save();
                     GameState::Congratulations(puzzle)
                 } else {
                     GameState::Playing(puzzle)

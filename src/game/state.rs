@@ -6,6 +6,7 @@ use crate::grid::generator::FilledGrid;
 use crate::grid::types::{Cell, Difficulty, Direction, Grid, LetterToken, Slot};
 
 /// A single clue entry in the puzzle's clue list.
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ClueEntry {
     pub number: u32,
     pub text: String,
@@ -14,6 +15,7 @@ pub struct ClueEntry {
 }
 
 /// The full state of an in-progress puzzle.
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct PuzzleState {
     /// The answer grid (filled with correct letters)
     pub grid: Grid,
@@ -28,11 +30,47 @@ pub struct PuzzleState {
     /// Current typing direction
     pub selected_direction: Direction,
     /// Mapping from (row, col) to clue number for cells that start a clue
+    #[serde(with = "clue_numbers_serde")]
     pub clue_numbers: HashMap<(usize, usize), u32>,
     /// The difficulty level this puzzle was generated at
     pub difficulty: Difficulty,
     /// Set of (row, col) cells that are wrong (populated by check button)
     pub error_cells: Vec<(usize, usize)>,
+}
+
+/// Custom serde for HashMap<(usize, usize), u32> since JSON keys must be strings.
+mod clue_numbers_serde {
+    use std::collections::HashMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(
+        map: &HashMap<(usize, usize), u32>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let string_map: HashMap<String, u32> = map
+            .iter()
+            .map(|((r, c), v)| (format!("{},{}", r, c), *v))
+            .collect();
+        string_map.serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<HashMap<(usize, usize), u32>, D::Error> {
+        let string_map: HashMap<String, u32> = HashMap::deserialize(deserializer)?;
+        string_map
+            .into_iter()
+            .map(|(k, v): (String, u32)| {
+                let parts: Vec<&str> = k.split(',').collect();
+                if parts.len() != 2 {
+                    return Err(serde::de::Error::custom("invalid key format"));
+                }
+                let r: usize = parts[0].parse().map_err(serde::de::Error::custom)?;
+                let c: usize = parts[1].parse().map_err(serde::de::Error::custom)?;
+                Ok(((r, c), v))
+            })
+            .collect()
+    }
 }
 
 impl PuzzleState {
@@ -298,7 +336,7 @@ impl PuzzleState {
     }
 
     /// Advance the cursor to the next white cell in the current direction.
-    /// Stops at the end of the word (does not wrap).
+    /// Stops at the end of the current word — never skips over black cells.
     fn advance_cursor(&mut self) {
         let (row, col) = match self.selected_cell {
             Some(c) => c,
@@ -307,26 +345,22 @@ impl PuzzleState {
 
         match self.selected_direction {
             Direction::Across => {
-                let mut next_col = col + 1;
-                while next_col < self.grid.width {
-                    if matches!(self.grid.cells[row][next_col], Cell::White { .. }) {
-                        self.selected_cell = Some((row, next_col));
-                        return;
-                    }
-                    next_col += 1;
+                let next_col = col + 1;
+                if next_col < self.grid.width
+                    && matches!(self.grid.cells[row][next_col], Cell::White { .. })
+                {
+                    self.selected_cell = Some((row, next_col));
                 }
-                // End of row — stay on current cell
+                // Black cell or end of row — stay on current cell
             }
             Direction::Down => {
-                let mut next_row = row + 1;
-                while next_row < self.grid.height {
-                    if matches!(self.grid.cells[next_row][col], Cell::White { .. }) {
-                        self.selected_cell = Some((next_row, col));
-                        return;
-                    }
-                    next_row += 1;
+                let next_row = row + 1;
+                if next_row < self.grid.height
+                    && matches!(self.grid.cells[next_row][col], Cell::White { .. })
+                {
+                    self.selected_cell = Some((next_row, col));
                 }
-                // End of column — stay on current cell
+                // Black cell or end of column — stay on current cell
             }
         }
     }
@@ -357,8 +391,9 @@ impl PuzzleState {
         false
     }
 
-    /// Handle backspace: clear the selected cell, or move back and clear the previous cell
+    /// Handle backspace/delete: clear the selected cell, or move back and clear the previous cell
     /// if the current cell is already empty (INTR-04, D-11).
+    /// Never skips over black cells — stays within the current word.
     pub fn backspace(&mut self) {
         let (row, col) = match self.selected_cell {
             Some(c) => c,
@@ -369,36 +404,34 @@ impl PuzzleState {
             // Clear the current cell
             self.user_grid[row][col] = None;
         } else {
-            // Move back one cell in the current direction and clear it
+            // Move back one cell in the current direction and clear it.
+            // Only move to the immediately adjacent cell if it's white (same word).
             match self.selected_direction {
                 Direction::Across => {
-                    if col > 0 {
-                        // Find previous white cell
-                        let mut prev_col = col;
-                        while prev_col > 0 {
-                            prev_col -= 1;
-                            if matches!(self.grid.cells[row][prev_col], Cell::White { .. }) {
-                                self.selected_cell = Some((row, prev_col));
-                                self.user_grid[row][prev_col] = None;
-                                return;
-                            }
-                        }
+                    if col > 0
+                        && matches!(self.grid.cells[row][col - 1], Cell::White { .. })
+                    {
+                        self.selected_cell = Some((row, col - 1));
+                        self.user_grid[row][col - 1] = None;
                     }
                 }
                 Direction::Down => {
-                    if row > 0 {
-                        let mut prev_row = row;
-                        while prev_row > 0 {
-                            prev_row -= 1;
-                            if matches!(self.grid.cells[prev_row][col], Cell::White { .. }) {
-                                self.selected_cell = Some((prev_row, col));
-                                self.user_grid[prev_row][col] = None;
-                                return;
-                            }
-                        }
+                    if row > 0
+                        && matches!(self.grid.cells[row - 1][col], Cell::White { .. })
+                    {
+                        self.selected_cell = Some((row - 1, col));
+                        self.user_grid[row - 1][col] = None;
                     }
                 }
             }
+        }
+    }
+
+    /// Clear the selected cell without moving the cursor (Delete key behavior).
+    pub fn delete_current(&mut self) {
+        if let Some((row, col)) = self.selected_cell {
+            self.user_grid[row][col] = None;
+            self.error_cells.retain(|&(r, c)| !(r == row && c == col));
         }
     }
 
@@ -498,6 +531,47 @@ impl PuzzleState {
         let (new_dir, _, slot) = combined[new_idx];
         self.selected_direction = new_dir;
         self.selected_cell = Some((slot.row, slot.col));
+    }
+
+    /// Reveal the answer for the currently selected word.
+    /// Fills all cells in the active word slot with the correct letters.
+    pub fn reveal_word(&mut self) {
+        let (sel_row, sel_col) = match self.selected_cell {
+            Some(c) => c,
+            None => return,
+        };
+
+        // Find the active slot in the current direction
+        let clues = match self.selected_direction {
+            Direction::Across => &self.across_clues,
+            Direction::Down => &self.down_clues,
+        };
+
+        let slot = clues.iter().find(|e| {
+            let s = &e.slot;
+            match s.direction {
+                Direction::Across => s.row == sel_row && s.col <= sel_col && sel_col < s.col + s.length,
+                Direction::Down => s.col == sel_col && s.row <= sel_row && sel_row < s.row + s.length,
+            }
+        }).map(|e| e.slot.clone());
+
+        if let Some(slot) = slot {
+            let cells: Vec<(usize, usize)> = match slot.direction {
+                Direction::Across => (slot.col..slot.col + slot.length)
+                    .map(|c| (slot.row, c))
+                    .collect(),
+                Direction::Down => (slot.row..slot.row + slot.length)
+                    .map(|r| (r, slot.col))
+                    .collect(),
+            };
+
+            for (r, c) in cells {
+                if let Cell::White { letter: Some(ref answer) } = self.grid.cells[r][c] {
+                    self.user_grid[r][c] = Some(answer.clone());
+                    self.error_cells.retain(|&(er, ec)| !(er == r && ec == c));
+                }
+            }
+        }
     }
 
     /// Select a clue by slot: set direction, find first empty cell in the slot (INTR-05, D-08).

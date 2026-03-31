@@ -257,10 +257,23 @@ pub fn draw_buttons() -> Option<PanelAction> {
     draw_text_ex(label2, btn2_x + (btn_w - dims2.width) / 2.0, btn_y + (BUTTON_HEIGHT + dims2.height) / 2.0,
         text_params(15, WHITE));
 
+    // "Toon antwoord" button — reveals the selected word's answer
+    let btn3_w = 140.0_f32;
+    let btn3_x = btn2_x + btn_w + BUTTON_PADDING;
+    let btn3_hovered = mx >= btn3_x && mx <= btn3_x + btn3_w && my >= btn_y && my <= btn_y + BUTTON_HEIGHT;
+    draw_rectangle(btn3_x, btn_y, btn3_w, BUTTON_HEIGHT,
+        if btn3_hovered { Color::from_rgba(160, 120, 60, 255) } else { Color::from_rgba(140, 100, 40, 255) });
+    let label3 = "Toon antwoord";
+    let dims3 = measure(label3, 15);
+    draw_text_ex(label3, btn3_x + (btn3_w - dims3.width) / 2.0, btn_y + (BUTTON_HEIGHT + dims3.height) / 2.0,
+        text_params(15, WHITE));
+
     if btn1_hovered && clicked {
         Some(PanelAction::NewPuzzle)
     } else if btn2_hovered && clicked {
         Some(PanelAction::Check)
+    } else if btn3_hovered && clicked {
+        Some(PanelAction::RevealWord)
     } else {
         None
     }

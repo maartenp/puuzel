@@ -18,6 +18,8 @@ pub enum PanelAction {
     RateClue { word_id: i64, clue_text: String },
     NewPuzzle,
     Check,
+    /// Reveal the answer for the currently selected word.
+    RevealWord,
 }
 
 const PANEL_START_RATIO: f32 = 0.57;

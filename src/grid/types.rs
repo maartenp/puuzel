@@ -1,6 +1,6 @@
 /// A single letter token in the Dutch crossword grid.
 /// The IJ digraph is treated as a single cell in Dutch crosswords.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum LetterToken {
     /// A standard single character
     Single(char),
@@ -9,14 +9,14 @@ pub enum LetterToken {
 }
 
 /// Direction of a word slot in the grid
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Direction {
     Across,
     Down,
 }
 
 /// A cell in the crossword grid
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Cell {
     /// A black (blocked) cell
     Black,
@@ -25,7 +25,7 @@ pub enum Cell {
 }
 
 /// A word slot in the grid — the location and shape of a word placement
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Slot {
     pub row: usize,
     pub col: usize,
@@ -34,7 +34,7 @@ pub struct Slot {
 }
 
 /// Difficulty level for puzzle generation
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Difficulty {
     Easy,
     Medium,
@@ -60,7 +60,7 @@ impl DifficultyConfig {
             difficulty: Difficulty::Easy,
             black_square_ratio_min: 0.35,
             black_square_ratio_max: 0.40,
-            min_word_length: 3,
+            min_word_length: 2,
             max_word_length: 8,
             min_commonness: 2,
         }
@@ -72,7 +72,7 @@ impl DifficultyConfig {
             difficulty: Difficulty::Medium,
             black_square_ratio_min: 0.30,
             black_square_ratio_max: 0.35,
-            min_word_length: 3,
+            min_word_length: 2,
             max_word_length: 12,
             min_commonness: 3,
         }
@@ -84,7 +84,7 @@ impl DifficultyConfig {
             difficulty: Difficulty::Hard,
             black_square_ratio_min: 0.25,
             black_square_ratio_max: 0.30,
-            min_word_length: 3,
+            min_word_length: 2,
             max_word_length: 15,
             min_commonness: 1,
         }
@@ -92,7 +92,7 @@ impl DifficultyConfig {
 }
 
 /// The crossword grid
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Grid {
     pub width: usize,
     pub height: usize,
